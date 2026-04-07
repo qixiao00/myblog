@@ -1,7 +1,7 @@
-import type { CollectionEntry } from "astro:content";
+﻿import type { CollectionEntry } from "astro:content";
 
 export type NoteEntry = CollectionEntry<"notes">;
-type DateValue = Date | string;
+type DateValue = Date | string | undefined;
 
 export type SidebarFolderNode = {
   kind: "folder";
@@ -28,11 +28,19 @@ function compareText(a: string, b: string) {
 }
 
 function toDate(value: DateValue) {
-  return value instanceof Date ? value : new Date(`${value}T00:00:00`);
+  if (!value) return undefined;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value;
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
 function compareDatesDesc(a: DateValue, b: DateValue) {
-  return toDate(b).getTime() - toDate(a).getTime();
+  return (toDate(b)?.getTime() ?? Number.NEGATIVE_INFINITY) -
+    (toDate(a)?.getTime() ?? Number.NEGATIVE_INFINITY);
 }
 
 export function normalizeNoteId(id: string) {
@@ -46,6 +54,18 @@ export function noteUrlFromId(id: string) {
     .map((segment) => encodeURIComponent(segment));
 
   return `/notes/${segments.join("/")}`;
+}
+
+export function getNoteTitle(note: Pick<NoteEntry, "id" | "data"> | string) {
+  const id = typeof note === "string" ? note : note.id;
+  const rawTitle = typeof note === "string" ? undefined : note.data.title;
+
+  if (rawTitle?.trim()) {
+    return rawTitle.trim();
+  }
+
+  const fallback = normalizeNoteId(id).split("/").pop() ?? "Untitled";
+  return fallback.replace(/[-_]/g, " ");
 }
 
 export function buildSidebarTree(entries: NoteEntry[]) {
@@ -85,7 +105,7 @@ export function buildSidebarTree(entries: NoteEntry[]) {
 
     currentFolder.children.push({
       kind: "note",
-      name: entry.data.title,
+      name: getNoteTitle(entry),
       path: notePath,
       url: noteUrlFromId(entry.id),
       date: entry.data.date,
@@ -136,17 +156,25 @@ export function getOpenFolderPaths(currentNotePath?: string) {
 
 export function getRecentNotes(entries: NoteEntry[], limit = 6) {
   return [...entries]
-    .sort((a, b) => compareDatesDesc(a.data.date, b.data.date) || compareText(a.data.title, b.data.title))
+    .sort(
+      (a, b) =>
+        compareDatesDesc(a.data.date, b.data.date) ||
+        compareText(getNoteTitle(a), getNoteTitle(b)),
+    )
     .slice(0, limit);
 }
 
 export function formatLongDate(value: DateValue) {
-  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(toDate(value));
+  const date = toDate(value);
+  if (!date) return "未标注日期";
+  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(date);
 }
 
 export function formatShortDate(value: DateValue) {
+  const date = toDate(value);
+  if (!date) return "--/--";
   return new Intl.DateTimeFormat("zh-CN", {
     month: "numeric",
     day: "numeric",
-  }).format(toDate(value));
+  }).format(date);
 }

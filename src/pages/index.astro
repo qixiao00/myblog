@@ -1,9 +1,10 @@
----
+﻿---
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
   buildSidebarTree,
   formatLongDate,
+  getNoteTitle,
   getRecentNotes,
   noteUrlFromId,
 } from "../lib/notes";
@@ -83,7 +84,7 @@ const recentNotes = getRecentNotes(notes, 6);
               class="grid gap-2 py-4 transition hover:translate-x-1 md:grid-cols-[1fr_auto] md:items-center"
             >
               <div>
-                <h3 class="text-lg font-semibold text-[var(--foreground)]">{note.data.title}</h3>
+                <h3 class="text-lg font-semibold text-[var(--foreground)]">{getNoteTitle(note)}</h3>
                 {note.data.description && (
                   <p class="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">{note.data.description}</p>
                 )}

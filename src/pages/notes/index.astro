@@ -1,9 +1,10 @@
----
+﻿---
 import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
   buildSidebarTree,
   formatLongDate,
+  getNoteTitle,
   getRecentNotes,
   normalizeNoteId,
   noteUrlFromId,
@@ -36,7 +37,7 @@ const orderedNotes = getRecentNotes(notes, notes.length);
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">{normalizeNoteId(note.id)}</p>
-              <h2 class="mt-2 text-xl font-semibold text-[var(--foreground)]">{note.data.title}</h2>
+              <h2 class="mt-2 text-xl font-semibold text-[var(--foreground)]">{getNoteTitle(note)}</h2>
             </div>
             <time class="pill">{formatLongDate(note.data.date)}</time>
           </div>
