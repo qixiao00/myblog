@@ -1,7 +1,11 @@
+@import url("https://cdn.staticfile.net/lxgw-wenkai-screen-webfont/1.7.0/lxgwwenkaiscreen.css");
+@import url("https://fastly.jsdelivr.net/npm/smiley-sans@2.0.1/font-main.css");
+
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@custom-variant dark (&:where(.dark, .dark *));
+
+
 
 :root {
   color-scheme: light;
@@ -44,7 +48,7 @@ body {
     radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.12), transparent 24%),
     var(--bg);
   color: var(--foreground);
-  font-family: "Avenir Next", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-family: "LXGW WenKai Screen", "Avenir Next", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   transition:
     background-color 260ms ease,
     color 220ms ease;
@@ -345,6 +349,10 @@ details[open] > .folder-children .folder-children-inner {
   padding: 0.55rem 0.9rem;
 }
 
+.font-intro {
+  font-family: "Smiley Sans", sans-serif;
+}
+
 .note-prose {
   color: var(--foreground);
 }
@@ -421,4 +429,11 @@ details[open] > .folder-children .folder-children-inner {
   .note-prose {
     font-size: 0.98rem;
   }
+}
+
+.font-intro {
+  /* 加上 !important 确保它能打败 h1 的全局定义 */
+  font-family: "Smiley Sans", sans-serif !important; 
+  /* 如果字体不生效，有时候是因为 font-weight 限制了，得意黑通常是中等偏粗 */
+  font-weight: normal !important; 
 }
