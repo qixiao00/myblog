@@ -20,22 +20,27 @@ const recentNotes = getRecentNotes(notes, 6);
 ---
 
 <BaseLayout title={SITE.title} description={SITE.description} tree={tree}>
-  <section class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--soft)]/55 p-6 sm:p-8">
-    <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">个人主页</p>
-    <h1 class="mt-4 max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
-      你好，我是阿巫，这里是我的数字花园，是我写垃圾话、编鬼点子的地方。
+  <section
+    class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--soft)]/55 p-6 sm:p-8"
+  >
+    <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">
+      个人主页
+    </p>
+    <h1
+      class="mt-4 max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl"
+    >
+      你好啊，我是亓qí，我打算在这里写写关于我的东西。
     </h1>
-    <div class="mt-6 max-w-3xl space-y-5 text-base leading-8 text-[var(--muted)]">
+    <div
+      class="mt-6 max-w-3xl space-y-5 text-base leading-8 text-[var(--muted)]"
+    >
       <p>
-        在「想法」中，我喜欢写一些突如其来的思考，不一定严肃，但起码在用脑子想。希望能给你一些灵感或者帮助。
+        我的朋友们总给我带来难以言说的感觉，以至于需要把我对他们的感受和回忆写下来才行，所以就有了「友人帐」
       </p>
-      <p>
-        「心情」则是我写流水账的地方，和朋友圈不同，里面的内容会更私人，更情绪化，或者偏向记录。希望你能从我的无聊人生里找到点乐子。
-      </p>
-      <p>
-        没有评论功能，有想说的可以私信我，再有就是多来踩踩。
-      </p>
-      <p>友情链接开放中，欢迎联系。</p>
+      <p>「心情」部分是当我有一些情绪时想写的话，其实是情绪化时的产物。</p>
+      <p>「图文」我想放一些图片上来，我想尽可能的把每一个章节做成一个摄影集一样的东西！</p>
+      <p>如果你想联系到我请通过邮箱ikkm541@gmail.com</p>
+      <p>祝你开心！</p>
     </div>
     <div class="mt-7 flex flex-wrap gap-3">
       <a
@@ -47,13 +52,25 @@ const recentNotes = getRecentNotes(notes, 6);
     </div>
   </section>
 
-  <section class="mt-8 rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg)]/50 p-6 sm:p-8">
+  <section
+    class="mt-8 rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg)]/50 p-6 sm:p-8"
+  >
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">最近笔记</p>
-        <h2 class="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]">最近更新</h2>
+        <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">
+          最近笔记
+        </p>
+        <h2
+          class="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]"
+        >
+          最近更新
+        </h2>
       </div>
-      <a href="/notes" class="text-sm text-[var(--accent)] transition hover:opacity-80">查看全部 →</a>
+      <a
+        href="/notes"
+        class="text-sm text-[var(--accent)] transition hover:opacity-80"
+        >查看全部 →</a
+      >
     </div>
 
     {
@@ -66,14 +83,22 @@ const recentNotes = getRecentNotes(notes, 6);
             >
               <div>
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <h3 class="text-lg font-semibold text-[var(--foreground)]">{getNoteTitle(note)}</h3>
-                  <span class="text-xs text-[var(--muted)]">来自 {getNoteFolderLabel(note.id)}</span>
+                  <h3 class="text-lg font-semibold text-[var(--foreground)]">
+                    {getNoteTitle(note)}
+                  </h3>
+                  <span class="text-xs text-[var(--muted)]">
+                    来自 {getNoteFolderLabel(note.id)}
+                  </span>
                 </div>
                 {note.data.description && (
-                  <p class="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">{note.data.description}</p>
+                  <p class="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">
+                    {note.data.description}
+                  </p>
                 )}
               </div>
-              <time class="text-sm text-[var(--muted)]">{formatLongDate(note.data.date)}</time>
+              <time class="text-sm text-[var(--muted)]">
+                {formatLongDate(note.data.date)}
+              </time>
             </a>
           ))}
         </div>
