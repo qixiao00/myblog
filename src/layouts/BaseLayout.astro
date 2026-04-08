@@ -30,17 +30,11 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     <script is:inline>
       (() => {
         const themeKey = "note-theme";
-        const storedTheme = localStorage.getItem(themeKey) ?? "system";
-        const resolvedTheme =
-          storedTheme === "system"
-            ? window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light"
-            : storedTheme;
+        const storedTheme = localStorage.getItem(themeKey) ?? "light";
 
         document.documentElement.dataset.theme = storedTheme;
-        document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
-        document.documentElement.style.colorScheme = resolvedTheme;
+        document.documentElement.classList.toggle("dark", storedTheme === "dark");
+        document.documentElement.style.colorScheme = storedTheme;
       })();
     </script>
   </head>
@@ -58,7 +52,7 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
             data-sidebar-toggle
             class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] px-4 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] lg:hidden"
           >
-            Ŀ¼
+            &#30446;&#24405;
           </button>
           <a href="/" class="text-sm uppercase tracking-[0.32em] text-[var(--muted)]">{SITE.title}</a>
         </div>
@@ -67,7 +61,7 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
           href="/notes"
           class="inline-flex items-center rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--soft)]"
         >
-          All notes
+          &#20840;&#37096;&#31508;&#35760;
         </a>
       </div>
     </header>
@@ -92,38 +86,26 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     <script is:inline>
       const themeKey = "note-theme";
       const root = document.documentElement;
-      const colorSchemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
-
-      const resolveTheme = (theme) =>
-        theme === "system" ? (colorSchemeMedia.matches ? "dark" : "light") : theme;
+      const themeToggle = document.querySelector("[data-theme-toggle]");
 
       const applyTheme = (theme) => {
-        const resolved = resolveTheme(theme);
         root.dataset.theme = theme;
-        root.classList.toggle("dark", resolved === "dark");
-        root.style.colorScheme = resolved;
-
-        document.querySelectorAll("[data-theme-option]").forEach((button) => {
-          const isActive = button.dataset.themeOption === theme;
-          button.dataset.active = String(isActive);
-          button.setAttribute("aria-pressed", String(isActive));
-        });
+        root.classList.toggle("dark", theme === "dark");
+        root.style.colorScheme = theme;
+        themeToggle?.setAttribute("data-theme", theme);
+        themeToggle?.setAttribute("aria-pressed", String(theme === "dark"));
+        themeToggle?.setAttribute(
+          "title",
+          theme === "dark" ? "\u5207\u6362\u5230\u660e\u4eae\u6a21\u5f0f" : "\u5207\u6362\u5230\u6df1\u8272\u6a21\u5f0f",
+        );
       };
 
-      const readTheme = () => localStorage.getItem(themeKey) ?? "system";
+      const readTheme = () => localStorage.getItem(themeKey) ?? "light";
 
-      document.querySelectorAll("[data-theme-option]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const theme = button.dataset.themeOption ?? "system";
-          localStorage.setItem(themeKey, theme);
-          applyTheme(theme);
-        });
-      });
-
-      colorSchemeMedia.addEventListener("change", () => {
-        if (readTheme() === "system") {
-          applyTheme("system");
-        }
+      themeToggle?.addEventListener("click", () => {
+        const nextTheme = readTheme() === "dark" ? "light" : "dark";
+        localStorage.setItem(themeKey, nextTheme);
+        applyTheme(nextTheme);
       });
 
       applyTheme(readTheme());

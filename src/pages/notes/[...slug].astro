@@ -33,13 +33,13 @@ const { Content, remarkPluginFrontmatter } = await render(entry);
 const readingTime = Number(remarkPluginFrontmatter?.readingTime ?? 1);
 const folderLabel = currentNotePath.includes("/")
   ? currentNotePath.split("/").slice(0, -1).join(" / ")
-  : "root";
+  : "顶层";
 const tags = entry.data.tags ?? [];
 ---
 
 <BaseLayout
   title={pageTitle}
-  description={entry.data.description ?? `${pageTitle} | published from Obsidian`}
+  description={entry.data.description ?? `${pageTitle} | 笔记`}
   tree={tree}
   currentNotePath={currentNotePath}
 >
@@ -55,7 +55,7 @@ const tags = entry.data.tags ?? [];
       <div class="mt-6 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
         <span class="pill">发布于 {formatLongDate(entry.data.date)}</span>
         {entry.data.updated && <span class="pill">更新于 {formatLongDate(entry.data.updated)}</span>}
-        <span class="pill">{readingTime} min read</span>
+        <span class="pill">约 {readingTime} 分钟阅读</span>
       </div>
       {
         tags.length > 0 && (

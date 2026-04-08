@@ -299,6 +299,50 @@ export function remarkReadingTime() {
   };
 }
 
+export function remarkSoftLineBreaks() {
+  function transformNode(node) {
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    if (EXCLUDED_PARENT_TYPES.has(node.type)) {
+      return;
+    }
+
+    if (!Array.isArray(node.children)) {
+      return;
+    }
+
+    const nextChildren = [];
+
+    for (const child of node.children) {
+      if (child.type === "text" && child.value.includes("\n")) {
+        const segments = child.value.split("\n");
+
+        segments.forEach((segment, index) => {
+          if (segment) {
+            nextChildren.push(toTextNode(segment));
+          }
+
+          if (index < segments.length - 1) {
+            nextChildren.push({ type: "break" });
+          }
+        });
+        continue;
+      }
+
+      transformNode(child);
+      nextChildren.push(child);
+    }
+
+    node.children = nextChildren;
+  }
+
+  return (tree) => {
+    transformNode(tree);
+  };
+}
+
 export function remarkObsidianLinksAndEmbeds(options) {
   const { resolver } = options;
 
@@ -419,9 +463,9 @@ export function remarkResolveRelativeAssets(options) {
 
 export function remarkObsidianCallouts() {
   const defaultTitles = {
-    note: "Note",
-    tip: "Tip",
-    warning: "Warning",
+    note: "\u7b14\u8bb0",
+    tip: "\u63d0\u793a",
+    warning: "\u8b66\u544a",
   };
 
   return (tree) => {

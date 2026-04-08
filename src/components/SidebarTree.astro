@@ -1,4 +1,4 @@
----
+﻿---
 import { formatShortDate } from "../lib/notes";
 import type { SidebarNode } from "../lib/notes";
 
@@ -22,20 +22,24 @@ const {
     nodes.map((node) =>
       node.kind === "folder" ? (
         <li>
-          <details open={openFolders.has(node.path)}>
+          <details open={openFolders.has(node.path)} class="folder-details">
             <summary class="folder-summary group">
               <span class="flex items-center gap-2">
                 <span class="folder-dot"></span>
                 {node.name}
               </span>
-              <span class="folder-chevron">?</span>
+              <span class="folder-chevron" aria-hidden="true"></span>
             </summary>
-            <Astro.self
-              nodes={node.children}
-              currentNotePath={currentNotePath}
-              openFolders={openFolders}
-              depth={depth + 1}
-            />
+            <div class="folder-children">
+              <div class="folder-children-inner">
+                <Astro.self
+                  nodes={node.children}
+                  currentNotePath={currentNotePath}
+                  openFolders={openFolders}
+                  depth={depth + 1}
+                />
+              </div>
+            </div>
           </details>
         </li>
       ) : (

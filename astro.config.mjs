@@ -5,6 +5,7 @@ import {
   createVaultResolver,
   remarkObsidianCallouts,
   remarkObsidianLinksAndEmbeds,
+  remarkSoftLineBreaks,
   remarkReadingTime,
   remarkResolveRelativeAssets,
 } from "./scripts/markdown-utils.mjs";
@@ -18,6 +19,7 @@ export default defineConfig({
   markdown: {
     remarkPlugins: [
       remarkGfm,
+      remarkSoftLineBreaks,
       remarkReadingTime,
       [remarkObsidianLinksAndEmbeds, { resolver: vaultResolver }],
       remarkObsidianCallouts,

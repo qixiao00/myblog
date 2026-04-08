@@ -1,4 +1,4 @@
----
+﻿---
 import ThemeToggle from "./ThemeToggle.astro";
 import SidebarTree from "./SidebarTree.astro";
 import { getOpenFolderPaths } from "../lib/notes";
@@ -17,7 +17,7 @@ const openFolders = getOpenFolderPaths(currentNotePath);
 <div class="surface-panel flex h-full flex-col gap-6 rounded-[2rem] p-5">
   <div class="flex items-start justify-between gap-4">
     <div>
-      <p class="text-xs uppercase tracking-[0.32em] text-[var(--muted)]">Notebook</p>
+      <p class="text-xs uppercase tracking-[0.32em] text-[var(--muted)]">目录</p>
       <a href="/" class="mt-2 block text-2xl font-semibold tracking-tight text-[var(--foreground)]">
         {SITE.title}
       </a>
@@ -27,7 +27,7 @@ const openFolders = getOpenFolderPaths(currentNotePath);
       type="button"
       data-sidebar-close
       class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] text-sm text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--foreground)] lg:hidden"
-      aria-label="Close navigation"
+      aria-label="关闭目录"
     >
       ×
     </button>
@@ -47,11 +47,4 @@ const openFolders = getOpenFolderPaths(currentNotePath);
       )
     }
   </nav>
-
-  <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--soft)]/70 px-4 py-4">
-    <p class="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Workflow</p>
-    <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
-      继续在 Obsidian 写作，然后把仓库 push 到 GitHub。Vercel 直连后会自动部署。
-    </p>
-  </div>
 </div>
