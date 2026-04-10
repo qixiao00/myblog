@@ -26,22 +26,24 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
+    <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=3" />
+    <link rel="apple-touch-icon" href="/favicon.svg?v=3" />
     <title>{pageTitle}</title>
     <script is:inline>
       (() => {
-        const themeKey = "note-theme";
-        const storedTheme = localStorage.getItem(themeKey) ?? "light";
-
-        document.documentElement.dataset.theme = storedTheme;
-        document.documentElement.classList.toggle("dark", storedTheme === "dark");
-        document.documentElement.style.colorScheme = storedTheme;
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = isDark ? "dark" : "light";
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.classList.toggle("dark", isDark);
+        document.documentElement.style.colorScheme = theme;
       })();
     </script>
   </head>
   <body class="antialiased">
     <div class="pointer-events-none fixed inset-0 overflow-hidden">
-      <div class="absolute -left-20 top-0 h-72 w-72 rounded-full bg-[var(--accent)]/15 blur-3xl"></div>
-      <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-sky-400/12 blur-3xl"></div>
+      <div class="absolute -left-20 top-0 h-72 w-72 rounded-full bg-[var(--accent)]/8 blur-3xl"></div>
+      <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-slate-300/10 blur-3xl"></div>
     </div>
 
     <header class="frost-header sticky top-0 z-30 border-b border-[var(--border)] backdrop-blur-xl">
@@ -54,7 +56,10 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
           >
             &#30446;&#24405;
           </button>
-          <a href="/" class="text-sm uppercase tracking-[0.32em] text-[var(--muted)]">{SITE.title}</a>
+          <a href="/" class="inline-flex items-center gap-2 text-sm uppercase tracking-[0.22em] text-[var(--muted)]">
+            <img src="/images/site-bg.jpg" alt="site logo" class="h-7 w-7 shrink-0 rounded-full border border-[var(--border)] object-cover aspect-square" />
+            <span>{SITE.title}</span>
+          </a>
         </div>
 
         <a
@@ -84,31 +89,18 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     </div>
 
     <script is:inline>
-      const themeKey = "note-theme";
       const root = document.documentElement;
-      const themeToggle = document.querySelector("[data-theme-toggle]");
+      const media = window.matchMedia("(prefers-color-scheme: dark)");
 
-      const applyTheme = (theme) => {
+      const applyTheme = (isDark) => {
+        const theme = isDark ? "dark" : "light";
         root.dataset.theme = theme;
-        root.classList.toggle("dark", theme === "dark");
+        root.classList.toggle("dark", isDark);
         root.style.colorScheme = theme;
-        themeToggle?.setAttribute("data-theme", theme);
-        themeToggle?.setAttribute("aria-pressed", String(theme === "dark"));
-        themeToggle?.setAttribute(
-          "title",
-          theme === "dark" ? "\u5207\u6362\u5230\u660e\u4eae\u6a21\u5f0f" : "\u5207\u6362\u5230\u6df1\u8272\u6a21\u5f0f",
-        );
       };
 
-      const readTheme = () => localStorage.getItem(themeKey) ?? "light";
-
-      themeToggle?.addEventListener("click", () => {
-        const nextTheme = readTheme() === "dark" ? "light" : "dark";
-        localStorage.setItem(themeKey, nextTheme);
-        applyTheme(nextTheme);
-      });
-
-      applyTheme(readTheme());
+      applyTheme(media.matches);
+      media.addEventListener("change", (event) => applyTheme(event.matches));
 
       const sidebarPanel = document.querySelector("[data-sidebar-panel]");
       const sidebarBackdrop = document.querySelector("[data-sidebar-backdrop]");
