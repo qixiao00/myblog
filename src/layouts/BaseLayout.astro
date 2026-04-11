@@ -30,15 +30,6 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=3" />
     <link rel="apple-touch-icon" href="/favicon.svg?v=3" />
     <title>{pageTitle}</title>
-    <script is:inline>
-      (() => {
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const theme = isDark ? "dark" : "light";
-        document.documentElement.dataset.theme = theme;
-        document.documentElement.classList.toggle("dark", isDark);
-        document.documentElement.style.colorScheme = theme;
-      })();
-    </script>
   </head>
   <body class="antialiased">
     <div class="pointer-events-none fixed inset-0 overflow-hidden">
@@ -101,19 +92,6 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     </div>
 
     <script is:inline>
-      const root = document.documentElement;
-      const media = window.matchMedia("(prefers-color-scheme: dark)");
-
-      const applyTheme = (isDark) => {
-        const theme = isDark ? "dark" : "light";
-        root.dataset.theme = theme;
-        root.classList.toggle("dark", isDark);
-        root.style.colorScheme = theme;
-      };
-
-      applyTheme(media.matches);
-      media.addEventListener("change", (event) => applyTheme(event.matches));
-
       const sidebarPanel = document.querySelector("[data-sidebar-panel]");
       const sidebarBackdrop = document.querySelector("[data-sidebar-backdrop]");
 

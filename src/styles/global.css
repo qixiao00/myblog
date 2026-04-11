@@ -29,7 +29,24 @@
   --shadow: 0 24px 80px rgba(15, 23, 42, 0.1);
 }
 
-.dark {
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121519;
+    --panel: rgba(23, 27, 33, 0.84);
+    --panel-strong: rgba(17, 21, 26, 0.95);
+    --soft: rgba(102, 157, 214, 0.14);
+    --border: rgba(148, 163, 184, 0.18);
+    --foreground: #f5efe5;
+    --muted: #bcaf9e;
+    --accent: #ee9b5f;
+    --accent-strong: #ffd0a8;
+    --code-bg: #1b2128;
+    --shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+  }
+}
+
+html[data-theme="dark"] {
   color-scheme: dark;
   --bg: #121519;
   --panel: rgba(23, 27, 33, 0.84);
