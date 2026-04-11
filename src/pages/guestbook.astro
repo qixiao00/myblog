@@ -1,4 +1,4 @@
----
+﻿---
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { buildSidebarTree } from "../lib/notes";
@@ -16,8 +16,15 @@ const tree = buildSidebarTree(notes);
     <p class="mt-4 text-sm text-[var(--muted)]">欢迎留下你的想法、建议或者打个招呼。</p>
   </section>
 
-  <section class="mt-8">
-    <form method="post" action="/api/comments" class="surface-panel space-y-4 rounded-[1.5rem] p-5">
+  <section class="mt-8 border-t border-[var(--border)] pt-8">
+    <h2 class="text-2xl font-semibold text-[var(--foreground)]">最新留言</h2>
+    <div id="guestbook-list" class="mt-6 space-y-3"></div>
+    <p id="guestbook-empty" class="mt-5 text-sm text-[var(--muted)]">还没有留言，来留下第一条吧。</p>
+  </section>
+
+  <section class="mt-8 border-t border-[var(--border)] pt-8">
+    <h2 class="text-2xl font-semibold text-[var(--foreground)]">新增留言</h2>
+    <form method="post" action="/api/comments" class="surface-panel mt-6 space-y-4 rounded-[1.5rem] p-5">
       <input type="hidden" name="slug" value="__guestbook__" />
       <input type="hidden" name="redirectTo" value="/guestbook" />
 
@@ -51,12 +58,6 @@ const tree = buildSidebarTree(notes);
         提交留言
       </button>
     </form>
-  </section>
-
-  <section class="mt-8 border-t border-[var(--border)] pt-8">
-    <h2 class="text-2xl font-semibold text-[var(--foreground)]">最新留言</h2>
-    <div id="guestbook-list" class="mt-6 space-y-3"></div>
-    <p id="guestbook-empty" class="mt-5 text-sm text-[var(--muted)]">还没有留言，来留下第一条吧。</p>
   </section>
 
   <script is:inline>
