@@ -22,48 +22,41 @@ const recentGuestbook = await getCommentsBySlug("__guestbook__", 6);
 ---
 
 <BaseLayout title={SITE.title} description={SITE.description} tree={tree}>
-  <section
-    class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--soft)]/55 p-6 sm:p-8"
-  >
-    <h1
-      class="hero-title font-intro mt-1 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl"
-    >
-      浣犲ソ鍟婏紝鎴戞槸浜搎铆銆?    </h1>
-    <h1
-      class="hero-title font-intro mt-2 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl"
-    >
-      鎴戞墦绠楀湪杩欓噷鍐欏啓鍏充簬鎴戠殑涓滆タ銆?    </h1>
-    <div
-      class="mt-6 max-w-6xl space-y-5 text-base leading-8 text-[var(--muted)]"
-    >
-      <p>
-        鎴戠殑鏈嬪弸浠€荤粰鎴戝甫鏉ラ毦浠ヨ█璇寸殑鎰熻锛屼互鑷充簬闇€瑕佹妸鎴戝浠栦滑鐨勬劅鍙楀拰鍥炲繂鍐欎笅鏉ユ墠琛岋紝鎵€浠ュ氨鏈変簡銆屽弸浜哄笎銆嶃€?      </p>
-      <p>銆屽績鎯呫€嶉儴鍒嗘槸褰撴垜鏈変竴浜涙儏缁椂鎯冲啓鐨勮瘽锛屽叾瀹炴槸鎯呯华鍖栨椂鐨勪骇鐗┿€?/p>
-      <p>
-        銆屽浘鏂囥€嶆垜鎯虫斁涓€浜涘浘鐗囦笂鏉ワ紝鎴戞兂灏藉彲鑳藉湴鎶婃瘡涓€涓珷鑺傚仛鎴愪竴涓憚褰遍泦涓€鏍风殑涓滆タ銆?      </p>
-      <p>濡傛灉浣犳兂鑱旂郴鍒版垜璇烽€氳繃閭 ikkm541@gmail.com</p>
-      <p>绁濅綘寮€蹇冿紒</p>
+  <section class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--soft)]/55 p-6 sm:p-8">
+    <h1 class="hero-title font-intro mt-1 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
+      你好呀，我是阿亓。
+    </h1>
+    <h1 class="hero-title font-intro mt-2 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
+      我打算在这里，写写关于我的东西。
+    </h1>
+
+    <div class="mt-6 max-w-6xl space-y-5 text-base leading-8 text-[var(--muted)]">
+      <p>朋友们总会给我带来难以言说的感受，所以我把关于他们的回忆写下来，就有了「友人帐」。</p>
+      <p>「心情」是我想记录情绪的时候，写给自己的一些短句。</p>
+      <p>「图文」会放一些照片与片段，我想让每个章节都像一个小小摄影集。</p>
+      <p>如果你想联系我，可以发邮件到 `ikkm541@gmail.com`。</p>
+      <p>祝你开心。</p>
     </div>
+
     <div class="mt-7 flex flex-wrap gap-3">
       <a
         href="/notes"
         class="inline-flex items-center rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90"
       >
-        娴忚鍏ㄩ儴绗旇
+        浏览全部笔记
       </a>
     </div>
   </section>
 
-
-  <section class="mt-8 grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
-    <aside class="surface-panel h-fit rounded-[1.5rem] p-5 lg:order-2 lg:sticky lg:top-24">
+  <section class="mt-8 lg:hidden">
+    <div class="surface-panel rounded-[1.5rem] p-5">
       <div class="flex items-center justify-between gap-3">
-        <h2 class="text-2xl font-semibold tracking-tight text-[var(--foreground)]">????</h2>
+        <h2 class="text-2xl font-semibold tracking-tight text-[var(--foreground)]">最新留言</h2>
         <a
           href="/guestbook"
           class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-3 py-1.5 text-xs text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
         >
-          ???
+          去留言
         </a>
       </div>
       {
@@ -87,52 +80,91 @@ const recentGuestbook = await getCommentsBySlug("__guestbook__", 6);
             ))}
           </div>
         ) : (
-          <p class="mt-5 text-sm text-[var(--muted)]">??????????????</p>
+          <p class="mt-5 text-sm text-[var(--muted)]">还没有留言，欢迎来写第一条。</p>
         )
       }
-    </aside>
-    <article class="rounded-[1.75rem] border border-[var(--border)]/70 bg-[var(--bg)]/35 p-6 sm:p-8 lg:order-1">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="mt-1 text-4xl font-semibold tracking-tight text-[var(--foreground)]">????</h2>
-        </div>
-        <a
-          href="/notes"
-          class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-4 py-2 text-sm text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
-          >???? -></a
-        >
-      </div>
-      {
-        recentNotes.length ? (
-          <div class="mt-7 divide-y divide-[var(--border)]/60">
-            {recentNotes.map((note) => (
-              <a
-                href={noteUrlFromId(note.id)}
-                class="group grid gap-3 py-5 transition md:grid-cols-[1fr_auto] md:items-start"
-              >
-                <div>
-                  <h3 class="text-2xl font-semibold leading-[1.35] tracking-normal text-[var(--foreground)] transition group-hover:text-[var(--accent)] [font-family:'Source_Han_Serif_SC','Noto_Serif_SC','Songti_SC','STSong','SimSun',serif]">
-                    {getNoteTitle(note)}
-                  </h3>
-                  <span class="mt-2 inline-flex rounded-full border border-[var(--border)]/70 px-2.5 py-0.5 text-xs leading-none text-[var(--muted)]">
-                    ?? {getNoteFolderLabel(note.id)}
-                  </span>
-                  {note.data.description && (
-                    <p class="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-                      {note.data.description}
-                    </p>
-                  )}
-                </div>
-                <time class="pt-1 text-base leading-[1.35] text-[var(--muted)]/85 md:text-right">
-                  {formatLongDate(note.data.date)}
-                </time>
-              </a>
-            ))}
-          </div>
-        ) : (
-          <p class="mt-6 text-sm text-[var(--muted)]">????????</p>
-        )
-      }
-    </article>
+    </div>
   </section>
+
+  <section class="mt-8 rounded-[1.75rem] border border-[var(--border)]/70 bg-[var(--bg)]/35 p-6 sm:p-8">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="mt-1 text-4xl font-semibold tracking-tight text-[var(--foreground)]">最近更新</h2>
+      </div>
+      <a
+        href="/notes"
+        class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-4 py-2 text-sm text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
+      >
+        查看全部 ->
+      </a>
+    </div>
+
+    {
+      recentNotes.length ? (
+        <div class="mt-7 divide-y divide-[var(--border)]/60">
+          {recentNotes.map((note) => (
+            <a
+              href={noteUrlFromId(note.id)}
+              class="group grid gap-3 py-5 transition md:grid-cols-[1fr_auto] md:items-start"
+            >
+              <div>
+                <h3 class="text-2xl font-semibold leading-[1.35] tracking-normal text-[var(--foreground)] transition group-hover:text-[var(--accent)] [font-family:'Source_Han_Serif_SC','Noto_Serif_SC','Songti_SC','STSong','SimSun',serif]">
+                  {getNoteTitle(note)}
+                </h3>
+                <span class="mt-2 inline-flex rounded-full border border-[var(--border)]/70 px-2.5 py-0.5 text-xs leading-none text-[var(--muted)]">
+                  来自 {getNoteFolderLabel(note.id)}
+                </span>
+                {note.data.description && (
+                  <p class="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">
+                    {note.data.description}
+                  </p>
+                )}
+              </div>
+              <time class="pt-1 text-base leading-[1.35] text-[var(--muted)]/85 md:text-right">
+                {formatLongDate(note.data.date)}
+              </time>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p class="mt-6 text-sm text-[var(--muted)]">还没有公开笔记。</p>
+      )
+    }
+  </section>
+
+  <aside slot="right" class="surface-panel sticky top-24 rounded-[1.5rem] p-5">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="text-xl font-semibold tracking-tight text-[var(--foreground)]">最新留言</h2>
+      <a
+        href="/guestbook"
+        class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-3 py-1.5 text-xs text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
+      >
+        去留言
+      </a>
+    </div>
+    {
+      recentGuestbook.length ? (
+        <div class="mt-4 space-y-3">
+          {recentGuestbook.map((item) => (
+            <article class="rounded-xl border border-[var(--border)]/80 bg-[var(--panel)] px-3 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <p class="font-medium text-[var(--foreground)]">{item.nickname}</p>
+                <time class="text-xs text-[var(--muted)]">
+                  {new Intl.DateTimeFormat("zh-CN", {
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(item.createdAt))}
+                </time>
+              </div>
+              <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{item.content}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p class="mt-5 text-sm text-[var(--muted)]">还没有留言，欢迎来写第一条。</p>
+      )
+    }
+  </aside>
 </BaseLayout>

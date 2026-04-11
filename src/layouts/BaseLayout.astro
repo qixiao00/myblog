@@ -1,4 +1,4 @@
----
+﻿---
 import Sidebar from "../components/Sidebar.astro";
 import "../styles/global.css";
 import type { SidebarNode } from "../lib/notes";
@@ -54,7 +54,7 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
             data-sidebar-toggle
             class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] px-4 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] lg:hidden"
           >
-            &#30446;&#24405;
+            目录
           </button>
           <a href="/" class="inline-flex items-center gap-2 text-sm uppercase tracking-[0.22em] text-[var(--muted)]">
             <img src="/images/site-bg.jpg" alt="site logo" class="h-7 w-7 shrink-0 rounded-full border border-[var(--border)] object-cover aspect-square" />
@@ -73,7 +73,7 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
             href="/notes"
             class="inline-flex items-center rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--soft)]"
           >
-            &#20840;&#37096;&#31508;&#35760;
+            全部笔记
           </a>
         </nav>
       </div>
@@ -95,7 +95,9 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
         </div>
       </main>
 
-      <div aria-hidden="true" class="hidden lg:block lg:w-64 lg:shrink-0"></div>
+      <aside class="hidden lg:block lg:w-64 lg:shrink-0">
+        <slot name="right" />
+      </aside>
     </div>
 
     <script is:inline>
@@ -145,4 +147,3 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     </script>
   </body>
 </html>
-
