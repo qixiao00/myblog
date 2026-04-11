@@ -57,50 +57,45 @@ const recentNotes = getRecentNotes(notes, 6);
   </section>
 
   <section
-    class="mt-8 rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg)]/50 p-6 sm:p-8"
+    class="mt-8 rounded-[1.75rem] border border-[var(--border)]/70 bg-[var(--bg)]/35 p-6 sm:p-8"
   >
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">
-          最近笔记
-        </p>
         <h2
-          class="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]"
+          class="mt-1 text-4xl font-semibold tracking-tight text-[var(--foreground)]"
         >
           最近更新
         </h2>
       </div>
       <a
         href="/notes"
-        class="text-sm text-[var(--accent)] transition hover:opacity-80"
+        class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-4 py-2 text-sm text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
         >查看全部 -></a
       >
     </div>
 
     {
       recentNotes.length ? (
-        <div class="mt-6 divide-y divide-[var(--border)]/80">
+        <div class="mt-7 divide-y divide-[var(--border)]/60">
           {recentNotes.map((note) => (
             <a
               href={noteUrlFromId(note.id)}
-              class="grid gap-3 py-4 transition hover:translate-x-1 md:grid-cols-[1fr_auto] md:items-center"
+              class="group grid gap-3 py-5 transition md:grid-cols-[1fr_auto] md:items-start"
             >
               <div>
-                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <h3 class="text-lg font-semibold text-[var(--foreground)]">
-                    {getNoteTitle(note)}
-                  </h3>
-                  <span class="text-xs text-[var(--muted)]">
-                    来自 {getNoteFolderLabel(note.id)}
-                  </span>
-                </div>
+                <h3 class="text-2xl font-semibold leading-[1.35] tracking-normal text-[var(--foreground)] transition group-hover:text-[var(--accent)] [font-family:'Source_Han_Serif_SC','Noto_Serif_SC','Songti_SC','STSong','SimSun',serif]">
+                  {getNoteTitle(note)}
+                </h3>
+                <span class="mt-2 inline-flex rounded-full border border-[var(--border)]/70 px-2.5 py-0.5 text-xs leading-none text-[var(--muted)]">
+                  来自 {getNoteFolderLabel(note.id)}
+                </span>
                 {note.data.description && (
                   <p class="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">
                     {note.data.description}
                   </p>
                 )}
               </div>
-              <time class="text-sm text-[var(--muted)]">
+              <time class="pt-1 text-base leading-[1.35] text-[var(--muted)]/85 md:text-right">
                 {formatLongDate(note.data.date)}
               </time>
             </a>
