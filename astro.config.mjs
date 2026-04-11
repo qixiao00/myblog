@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import vercel from "@astrojs/vercel";
 import tailwindcss from "@tailwindcss/vite";
 import remarkGfm from "remark-gfm";
 import {
@@ -13,6 +14,8 @@ import {
 const vaultResolver = createVaultResolver(new URL("./vault/", import.meta.url));
 
 export default defineConfig({
+  adapter: vercel(),
+  output: "server",
   vite: {
     plugins: [tailwindcss()],
   },

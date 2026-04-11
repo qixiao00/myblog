@@ -4,13 +4,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
   buildSidebarTree,
   formatLongDate,
-  getNoteFolderLabel,
   getNoteTitle,
   getSiblingNotes,
   normalizeNoteId,
   noteUrlFromId,
 } from "../../lib/notes";
 import type { NoteEntry } from "../../lib/notes";
+import { getCommentsBySlug, getPostViews } from "../../lib/engagement";
 
 export async function getStaticPaths() {
   const notes = await getCollection(
@@ -37,6 +37,8 @@ const readingTime = Number(remarkPluginFrontmatter?.readingTime ?? 1);
 const folderLabel = currentNotePath.includes("/") ? currentNotePath.split("/").slice(0, -1).join(" / ") : "顶层";
 const tags = entry.data.tags ?? [];
 const { previous, next } = getSiblingNotes(notes, entry.id);
+const views = await getPostViews(currentNotePath);
+const comments = await getCommentsBySlug(currentNotePath);
 ---
 
 <BaseLayout
@@ -45,7 +47,7 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
   tree={tree}
   currentNotePath={currentNotePath}
 >
-  <article>
+  <article data-note-slug={currentNotePath}>
     <header class="border-b border-[var(--border)] pb-7">
       <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">{folderLabel}</p>
       <h1 class="mt-4 text-4xl font-semibold leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
@@ -58,6 +60,7 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
         <span class="pill">发布于 {formatLongDate(entry.data.date)}</span>
         {entry.data.updated && <span class="pill">更新于 {formatLongDate(entry.data.updated)}</span>}
         <span class="pill">约 {readingTime} 分钟阅读</span>
+        <span class="pill">浏览 {views.toLocaleString("zh-CN")}</span>
       </div>
       {
         tags.length > 0 && (
@@ -75,6 +78,69 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
         <Content />
       </article>
     </div>
+
+    <section id="comments" class="mt-10 border-t border-[var(--border)] pt-8">
+      <h2 class="text-2xl font-semibold text-[var(--foreground)]">评论</h2>
+      <p class="mt-2 text-sm text-[var(--muted)]">欢迎留言交流，理性友好讨论。</p>
+
+      <form method="post" action="/api/comments" class="surface-panel mt-6 space-y-4 rounded-[1.5rem] p-5">
+        <input type="hidden" name="slug" value={currentNotePath} />
+        <input type="hidden" name="redirectTo" value={Astro.url.pathname} />
+
+        <label class="block">
+          <span class="mb-2 block text-sm text-[var(--muted)]">昵称</span>
+          <input
+            name="nickname"
+            required
+            maxlength="30"
+            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+            placeholder="怎么称呼你"
+          />
+        </label>
+
+        <label class="block">
+          <span class="mb-2 block text-sm text-[var(--muted)]">评论内容</span>
+          <textarea
+            name="content"
+            required
+            maxlength="1000"
+            rows="4"
+            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+            placeholder="写点什么..."
+          ></textarea>
+        </label>
+
+        <button
+          type="submit"
+          class="inline-flex items-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+        >
+          发表评论
+        </button>
+      </form>
+
+      {
+        comments.length > 0 ? (
+          <div class="mt-6 space-y-3">
+            {comments.map((comment) => (
+              <article class="surface-panel rounded-[1.25rem] p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <p class="font-medium text-[var(--foreground)]">{comment.nickname}</p>
+                  <time class="text-xs text-[var(--muted)]">
+                    {new Intl.DateTimeFormat("zh-CN", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }).format(new Date(comment.createdAt))}
+                  </time>
+                </div>
+                <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{comment.content}</p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p class="mt-5 text-sm text-[var(--muted)]">还没有评论，来留下第一条吧。</p>
+        )
+      }
+    </section>
 
     {
       (previous || next) && (
@@ -108,4 +174,22 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
       )
     }
   </article>
+
+  <script is:inline>
+    const slug = document.querySelector("[data-note-slug]")?.getAttribute("data-note-slug") ?? "";
+    if (!slug) return;
+    const body = JSON.stringify({ slug });
+
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: "application/json" });
+      navigator.sendBeacon("/api/view", blob);
+    } else {
+      fetch("/api/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    }
+  </script>
 </BaseLayout>

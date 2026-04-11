@@ -1,0 +1,65 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getStatsOverview } from "../lib/engagement";
+import { buildSidebarTree, noteUrlFromId } from "../lib/notes";
+
+const notes = await getCollection(
+  "notes",
+  ({ data }) => !import.meta.env.PROD || !data.draft,
+);
+const tree = buildSidebarTree(notes);
+const stats = await getStatsOverview(30);
+---
+
+<BaseLayout title="站点统计" description="站点访问与互动统计。" tree={tree}>
+  <section>
+    <h1 class="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)]">站点统计</h1>
+    <p class="mt-4 text-sm text-[var(--muted)]">数据包含全站文章浏览量与公开评论。</p>
+  </section>
+
+  <section class="mt-8 grid gap-4 md:grid-cols-2">
+    <article class="surface-panel rounded-[1.5rem] p-5">
+      <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">总浏览量</p>
+      <p class="mt-3 text-4xl font-semibold text-[var(--foreground)]">{stats.siteViews.toLocaleString("zh-CN")}</p>
+    </article>
+    <article class="surface-panel rounded-[1.5rem] p-5">
+      <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">总评论数</p>
+      <p class="mt-3 text-4xl font-semibold text-[var(--foreground)]">{stats.comments.toLocaleString("zh-CN")}</p>
+    </article>
+  </section>
+
+  <section class="mt-8 rounded-[1.5rem] border border-[var(--border)] bg-[var(--panel)] p-5">
+    <h2 class="text-2xl font-semibold text-[var(--foreground)]">文章浏览量 Top</h2>
+    {
+      stats.topPosts.length > 0 ? (
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full min-w-[28rem] text-left text-sm">
+            <thead>
+              <tr class="border-b border-[var(--border)] text-[var(--muted)]">
+                <th class="py-2 pr-4 font-medium">文章</th>
+                <th class="py-2 pr-4 font-medium">路径</th>
+                <th class="py-2 text-right font-medium">浏览量</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.topPosts.map((row) => (
+                <tr class="border-b border-[var(--border)]/60">
+                  <td class="py-3 pr-4">
+                    <a class="text-[var(--accent)] hover:opacity-80" href={noteUrlFromId(row.slug)}>
+                      {row.slug.split("/").pop()}
+                    </a>
+                  </td>
+                  <td class="py-3 pr-4 text-[var(--muted)]">{row.slug}</td>
+                  <td class="py-3 text-right text-[var(--foreground)]">{row.views.toLocaleString("zh-CN")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p class="mt-4 text-sm text-[var(--muted)]">暂时还没有浏览数据。</p>
+      )
+    }
+  </section>
+</BaseLayout>
