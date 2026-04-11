@@ -10,7 +10,8 @@ import {
   noteUrlFromId,
 } from "../../lib/notes";
 import type { NoteEntry } from "../../lib/notes";
-import { getCommentsBySlug, getPostViews } from "../../lib/engagement";
+
+export const prerender = true;
 
 export async function getStaticPaths() {
   const notes = await getCollection(
@@ -37,8 +38,6 @@ const readingTime = Number(remarkPluginFrontmatter?.readingTime ?? 1);
 const folderLabel = currentNotePath.includes("/") ? currentNotePath.split("/").slice(0, -1).join(" / ") : "顶层";
 const tags = entry.data.tags ?? [];
 const { previous, next } = getSiblingNotes(notes, entry.id);
-const views = await getPostViews(currentNotePath);
-const comments = await getCommentsBySlug(currentNotePath);
 ---
 
 <BaseLayout
@@ -60,7 +59,7 @@ const comments = await getCommentsBySlug(currentNotePath);
         <span class="pill">发布于 {formatLongDate(entry.data.date)}</span>
         {entry.data.updated && <span class="pill">更新于 {formatLongDate(entry.data.updated)}</span>}
         <span class="pill">约 {readingTime} 分钟阅读</span>
-        <span class="pill">浏览 {views.toLocaleString("zh-CN")}</span>
+        <span class="pill">浏览 <span data-view-count>--</span></span>
       </div>
       {
         tags.length > 0 && (
@@ -118,28 +117,8 @@ const comments = await getCommentsBySlug(currentNotePath);
         </button>
       </form>
 
-      {
-        comments.length > 0 ? (
-          <div class="mt-6 space-y-3">
-            {comments.map((comment) => (
-              <article class="surface-panel rounded-[1.25rem] p-4">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="font-medium text-[var(--foreground)]">{comment.nickname}</p>
-                  <time class="text-xs text-[var(--muted)]">
-                    {new Intl.DateTimeFormat("zh-CN", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(comment.createdAt))}
-                  </time>
-                </div>
-                <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{comment.content}</p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p class="mt-5 text-sm text-[var(--muted)]">还没有评论，来留下第一条吧。</p>
-        )
-      }
+      <div id="comments-list" class="mt-6 space-y-3"></div>
+      <p id="comments-empty" class="mt-5 text-sm text-[var(--muted)]">还没有评论，来留下第一条吧。</p>
     </section>
 
     {
@@ -179,17 +158,66 @@ const comments = await getCommentsBySlug(currentNotePath);
     const slug = document.querySelector("[data-note-slug]")?.getAttribute("data-note-slug") ?? "";
     if (!slug) return;
     const body = JSON.stringify({ slug });
+    const viewsNode = document.querySelector("[data-view-count]");
+    const commentsList = document.querySelector("#comments-list");
+    const commentsEmpty = document.querySelector("#comments-empty");
+    const escapeHtml = (input) =>
+      String(input ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
 
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: "application/json" });
-      navigator.sendBeacon("/api/view", blob);
-    } else {
-      fetch("/api/view", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-      }).catch(() => {});
-    }
+    const renderComments = (items) => {
+      if (!commentsList || !commentsEmpty) return;
+
+      if (!items?.length) {
+        commentsEmpty.classList.remove("hidden");
+        commentsList.innerHTML = "";
+        return;
+      }
+
+      commentsEmpty.classList.add("hidden");
+      commentsList.innerHTML = items
+        .map((comment) => {
+          const createdAt = new Date(comment.createdAt);
+          const time = Number.isNaN(createdAt.getTime())
+            ? ""
+            : new Intl.DateTimeFormat("zh-CN", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }).format(createdAt);
+
+          return `
+            <article class="surface-panel rounded-[1.25rem] p-4">
+              <div class="flex items-center justify-between gap-3">
+                <p class="font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
+                <time class="text-xs text-[var(--muted)]">${time}</time>
+              </div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
+            </article>
+          `;
+        })
+        .join("");
+    };
+
+    fetch(`/api/comments?slug=${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => renderComments(data?.comments ?? []))
+      .catch(() => {});
+
+    fetch("/api/view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!viewsNode || !data?.views) return;
+        viewsNode.textContent = Number(data.views).toLocaleString("zh-CN");
+      })
+      .catch(() => {});
   </script>
 </BaseLayout>
