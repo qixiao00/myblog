@@ -156,68 +156,81 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
 
   <script is:inline>
     const slug = document.querySelector("[data-note-slug]")?.getAttribute("data-note-slug") ?? "";
-    if (!slug) return;
-    const body = JSON.stringify({ slug });
-    const viewsNode = document.querySelector("[data-view-count]");
-    const commentsList = document.querySelector("#comments-list");
-    const commentsEmpty = document.querySelector("#comments-empty");
-    const escapeHtml = (input) =>
-      String(input ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+    if (slug) {
+      const body = JSON.stringify({ slug });
+      const viewsNode = document.querySelector("[data-view-count]");
+      const commentsList = document.querySelector("#comments-list");
+      const commentsEmpty = document.querySelector("#comments-empty");
+      const escapeHtml = (input) =>
+        String(input ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
 
-    const renderComments = (items) => {
-      if (!commentsList || !commentsEmpty) return;
+      const renderComments = (items) => {
+        if (!commentsList || !commentsEmpty) return;
 
-      if (!items?.length) {
-        commentsEmpty.classList.remove("hidden");
-        commentsList.innerHTML = "";
-        return;
-      }
+        if (!items?.length) {
+          commentsEmpty.classList.remove("hidden");
+          commentsList.innerHTML = "";
+          return;
+        }
 
-      commentsEmpty.classList.add("hidden");
-      commentsList.innerHTML = items
-        .map((comment) => {
-          const createdAt = new Date(comment.createdAt);
-          const time = Number.isNaN(createdAt.getTime())
-            ? ""
-            : new Intl.DateTimeFormat("zh-CN", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              }).format(createdAt);
+        commentsEmpty.classList.add("hidden");
+        commentsList.innerHTML = items
+          .map((comment) => {
+            const createdAt = new Date(comment.createdAt);
+            const time = Number.isNaN(createdAt.getTime())
+              ? ""
+              : new Intl.DateTimeFormat("zh-CN", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(createdAt);
 
-          return `
-            <article class="surface-panel rounded-[1.25rem] p-4">
-              <div class="flex items-center justify-between gap-3">
-                <p class="font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
-                <time class="text-xs text-[var(--muted)]">${time}</time>
-              </div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
-            </article>
-          `;
-        })
-        .join("");
-    };
+            return `
+              <article class="surface-panel rounded-[1.25rem] p-4">
+                <div class="flex items-center justify-between gap-3">
+                  <p class="font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
+                  <time class="text-xs text-[var(--muted)]">${time}</time>
+                </div>
+                <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
+              </article>
+            `;
+          })
+          .join("");
+      };
 
-    fetch(`/api/comments?slug=${encodeURIComponent(slug)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => renderComments(data?.comments ?? []))
-      .catch(() => {});
+      fetch(`/api/comments?slug=${encodeURIComponent(slug)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => renderComments(data?.comments ?? []))
+        .catch(() => {});
 
-    fetch("/api/view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      keepalive: true,
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!viewsNode || !data?.views) return;
-        viewsNode.textContent = Number(data.views).toLocaleString("zh-CN");
+      fetch("/api/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
       })
-      .catch(() => {});
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!viewsNode || !data?.views) return;
+          viewsNode.textContent = Number(data.views).toLocaleString("zh-CN");
+        })
+        .catch(() => {});
+    } else {
+      const commentsList = document.querySelector("#comments-list");
+      const commentsEmpty = document.querySelector("#comments-empty");
+      if (commentsList) commentsList.innerHTML = "";
+      if (commentsEmpty) {
+        commentsEmpty.classList.remove("hidden");
+        commentsEmpty.textContent = "评论加载失败，请刷新后重试。";
+      }
+      const viewsNode = document.querySelector("[data-view-count]");
+      if (viewsNode) {
+        viewsNode.textContent = "--";
+      }
+    }
   </script>
 </BaseLayout>
