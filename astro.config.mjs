@@ -16,6 +16,9 @@ const vaultResolver = createVaultResolver(new URL("./vault/", import.meta.url));
 export default defineConfig({
   adapter: vercel(),
   output: "server",
+  security: {
+    checkOrigin: false,
+  },
   vite: {
     plugins: [tailwindcss()],
   },
