@@ -62,12 +62,20 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
           </a>
         </div>
 
-        <a
-          href="/notes"
-          class="inline-flex items-center rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--soft)]"
-        >
-          &#20840;&#37096;&#31508;&#35760;
-        </a>
+        <nav class="flex items-center gap-2">
+          <a
+            href="/guestbook"
+            class="inline-flex items-center rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--soft)]"
+          >
+            留言板
+          </a>
+          <a
+            href="/notes"
+            class="inline-flex items-center rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--soft)]"
+          >
+            &#20840;&#37096;&#31508;&#35760;
+          </a>
+        </nav>
       </div>
     </header>
 

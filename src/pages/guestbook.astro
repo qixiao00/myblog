@@ -1,0 +1,113 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { buildSidebarTree } from "../lib/notes";
+
+const notes = await getCollection(
+  "notes",
+  ({ data }) => !import.meta.env.PROD || !data.draft,
+);
+const tree = buildSidebarTree(notes);
+---
+
+<BaseLayout title="留言板" description="给站长留个言。" tree={tree}>
+  <section>
+    <h1 class="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)]">留言板</h1>
+    <p class="mt-4 text-sm text-[var(--muted)]">欢迎留下你的想法、建议或者打个招呼。</p>
+  </section>
+
+  <section class="mt-8">
+    <form method="post" action="/api/comments" class="surface-panel space-y-4 rounded-[1.5rem] p-5">
+      <input type="hidden" name="slug" value="__guestbook__" />
+      <input type="hidden" name="redirectTo" value="/guestbook" />
+
+      <label class="block">
+        <span class="mb-2 block text-sm text-[var(--muted)]">昵称</span>
+        <input
+          name="nickname"
+          required
+          maxlength="30"
+          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+          placeholder="怎么称呼你"
+        />
+      </label>
+
+      <label class="block">
+        <span class="mb-2 block text-sm text-[var(--muted)]">留言内容</span>
+        <textarea
+          name="content"
+          required
+          maxlength="1000"
+          rows="5"
+          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+          placeholder="写点什么..."
+        ></textarea>
+      </label>
+
+      <button
+        type="submit"
+        class="inline-flex items-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+      >
+        提交留言
+      </button>
+    </form>
+  </section>
+
+  <section class="mt-8 border-t border-[var(--border)] pt-8">
+    <h2 class="text-2xl font-semibold text-[var(--foreground)]">最新留言</h2>
+    <div id="guestbook-list" class="mt-6 space-y-3"></div>
+    <p id="guestbook-empty" class="mt-5 text-sm text-[var(--muted)]">还没有留言，来留下第一条吧。</p>
+  </section>
+
+  <script is:inline>
+    const listNode = document.querySelector("#guestbook-list");
+    const emptyNode = document.querySelector("#guestbook-empty");
+    const slug = "__guestbook__";
+
+    const escapeHtml = (input) =>
+      String(input ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    const renderList = (items) => {
+      if (!listNode || !emptyNode) return;
+
+      if (!items?.length) {
+        emptyNode.classList.remove("hidden");
+        listNode.innerHTML = "";
+        return;
+      }
+
+      emptyNode.classList.add("hidden");
+      listNode.innerHTML = items
+        .map((comment) => {
+          const createdAt = new Date(comment.createdAt);
+          const time = Number.isNaN(createdAt.getTime())
+            ? ""
+            : new Intl.DateTimeFormat("zh-CN", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }).format(createdAt);
+
+          return `
+            <article class="surface-panel rounded-[1.25rem] p-4">
+              <div class="flex items-center justify-between gap-3">
+                <p class="font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
+                <time class="text-xs text-[var(--muted)]">${time}</time>
+              </div>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
+            </article>
+          `;
+        })
+        .join("");
+    };
+
+    fetch(`/api/comments?slug=${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => renderList(data?.comments ?? []))
+      .catch(() => {});
+  </script>
+</BaseLayout>
