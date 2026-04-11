@@ -9,3 +9,8 @@ script = ""
 name = "运行"
 icon = "run"
 command = "npm run dev"
+
+[[actions]]
+name = "git add ."
+icon = "tool"
+command = "git add ."

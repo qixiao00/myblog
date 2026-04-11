@@ -71,21 +71,23 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
       </div>
     </header>
 
-    <div class="relative mx-auto flex max-w-7xl gap-6 px-4 py-6 lg:px-6">
+    <div class="relative mx-auto flex w-full max-w-[1320px] gap-6 px-4 py-6 lg:px-6">
       <div data-sidebar-backdrop class="fixed inset-0 z-30 hidden bg-slate-950/45 lg:hidden"></div>
 
       <aside
         data-sidebar-panel
-        class="fixed inset-y-0 left-0 z-40 w-[min(86vw,22rem)] -translate-x-full px-4 py-4 transition-transform duration-200 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:w-80 lg:translate-x-0 lg:px-0 lg:py-0"
+        class="fixed inset-y-0 left-0 z-40 w-[min(86vw,22rem)] -translate-x-full px-4 py-4 transition-transform duration-200 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:w-[18.5rem] lg:translate-x-0 lg:px-0 lg:py-0"
       >
         <Sidebar tree={tree} currentNotePath={currentNotePath} />
       </aside>
 
-      <main class="min-w-0 flex-1 lg:pl-2">
-        <div class="note-shell rounded-[2rem] px-5 py-6 sm:px-7 sm:py-7 lg:px-10 lg:py-9">
+      <main class="min-w-0 flex-1 lg:pl-1">
+        <div class="mx-auto max-w-6xl px-3 py-2 sm:px-5 sm:py-4 lg:px-8 lg:py-6">
           <slot />
         </div>
       </main>
+
+      <div aria-hidden="true" class="hidden lg:block lg:w-[18.5rem] lg:shrink-0"></div>
     </div>
 
     <script is:inline>
@@ -135,3 +137,4 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     </script>
   </body>
 </html>
+

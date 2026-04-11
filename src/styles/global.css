@@ -115,6 +115,12 @@ code {
   background: transparent;
 }
 
+@media (min-width: 1024px) {
+  .sidebar-shell {
+    height: 100%;
+  }
+}
+
 @media (max-width: 1023px) {
   .sidebar-shell {
     min-height: 100%;
@@ -123,17 +129,6 @@ code {
     backdrop-filter: blur(18px);
   }
 }
-.note-shell {
-  background: var(--panel-strong);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(20px);
-  transition:
-    background-color 240ms ease,
-    border-color 240ms ease,
-    box-shadow 240ms ease;
-}
-
 .sidebar-link {
   display: flex;
   align-items: center;

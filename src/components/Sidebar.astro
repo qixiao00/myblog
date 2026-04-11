@@ -2,7 +2,6 @@
 import SidebarTree from "./SidebarTree.astro";
 import { getOpenFolderPaths } from "../lib/notes";
 import type { SidebarNode } from "../lib/notes";
-import { SITE } from "../lib/site";
 
 interface Props {
   tree: SidebarNode[];
@@ -13,15 +12,8 @@ const { tree, currentNotePath } = Astro.props;
 const openFolders = getOpenFolderPaths(currentNotePath);
 ---
 
-<div class="sidebar-shell flex h-full flex-col gap-6 p-2 lg:p-0">
-  <div class="flex items-start justify-between gap-4">
-    <div>
-      <p class="text-xs uppercase tracking-[0.32em] text-[var(--muted)]">目录</p>
-      <a href="/" class="mt-2 block text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-        {SITE.title}
-      </a>
-      <p class="mt-3 text-sm leading-6 text-[var(--muted)]">{SITE.description}</p>
-    </div>
+<div class="sidebar-shell flex h-full flex-col gap-4 p-2 lg:p-0">
+  <div class="flex items-start justify-end lg:hidden">
     <button
       type="button"
       data-sidebar-close
@@ -32,13 +24,13 @@ const openFolders = getOpenFolderPaths(currentNotePath);
     </button>
   </div>
 
-  <nav class="min-h-0 flex-1 overflow-y-auto pr-1">
+  <nav class="min-h-0 flex-1 overflow-y-auto pr-1 lg:pt-1">
     {
       tree.length ? (
         <SidebarTree nodes={tree} currentNotePath={currentNotePath} openFolders={openFolders} />
       ) : (
         <p class="px-2 py-4 text-sm leading-7 text-[var(--muted)]">
-          在 <code class="rounded bg-[var(--soft)] px-1.5 py-0.5 text-xs">vault/</code>
+          在<code class="rounded bg-[var(--soft)] px-1.5 py-0.5 text-xs">vault/</code>
           新建第一篇笔记后，这里会自动生成目录树。
         </p>
       )
