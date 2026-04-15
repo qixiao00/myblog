@@ -98,6 +98,16 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
             placeholder="name@example.com"
           />
         </label>
+        <div class="flex items-center gap-3 rounded-xl border border-[var(--border)] px-3 py-2">
+          <img
+            src="https://api.dicebear.com/9.x/identicon/svg?seed=preview"
+            data-email-preview
+            data-default="https://api.dicebear.com/9.x/identicon/svg?seed=preview"
+            alt="avatar preview"
+            class="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
+          />
+          <p class="text-xs text-[var(--muted)]">输入邮箱后会自动预览头像。</p>
+        </div>
 
         <label class="block">
           <span class="mb-2 block text-sm text-[var(--muted)]">昵称</span>
@@ -179,7 +189,49 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
     const setupEmailGate = (form) => {
       const emailInput = form.querySelector("[data-email-input]");
       const dependentFields = form.querySelectorAll("[data-email-dependent]");
+      const preview = form.querySelector("[data-email-preview]");
       if (!emailInput || !dependentFields.length) return;
+      let pendingAvatarTimer = null;
+      let latestPreviewToken = 0;
+
+      const setPreviewSource = (src, fallback = "") => {
+        if (!preview) return;
+        preview.onerror = () => {
+          if (preview.dataset.fallback) {
+            preview.onerror = null;
+            preview.src = preview.dataset.fallback;
+          }
+        };
+        preview.src = src || preview.dataset.default || "";
+        if (fallback) {
+          preview.dataset.fallback = fallback;
+        } else {
+          delete preview.dataset.fallback;
+        }
+      };
+
+      const updatePreview = () => {
+        if (!preview) return;
+        if (!emailInput.checkValidity()) {
+          setPreviewSource(preview.dataset.default || "");
+          return;
+        }
+
+        const token = ++latestPreviewToken;
+        fetch(`/api/avatar?email=${encodeURIComponent(emailInput.value.trim())}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (token !== latestPreviewToken) return;
+            if (!data?.ok) {
+              setPreviewSource(preview.dataset.default || "");
+              return;
+            }
+            setPreviewSource(data.avatarUrl || data.avatarFallbackUrl, data.avatarFallbackUrl || "");
+          })
+          .catch(() => {
+            setPreviewSource(preview.dataset.default || "");
+          });
+      };
 
       const toggle = () => {
         const enabled = emailInput.value.trim().length > 0 && emailInput.checkValidity();
@@ -189,8 +241,14 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
       };
 
       emailInput.addEventListener("input", toggle);
+      emailInput.addEventListener("input", () => {
+        if (pendingAvatarTimer) clearTimeout(pendingAvatarTimer);
+        pendingAvatarTimer = setTimeout(updatePreview, 220);
+      });
       emailInput.addEventListener("blur", toggle);
+      emailInput.addEventListener("blur", updatePreview);
       toggle();
+      updatePreview();
     };
 
     document.querySelectorAll("form[data-email-gate]").forEach((form) => setupEmailGate(form));
