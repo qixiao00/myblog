@@ -9,6 +9,7 @@ import {
   getRecentNotes,
   noteUrlFromId,
 } from "../lib/notes";
+import { getCommentsBySlug } from "../lib/engagement";
 import { SITE } from "../lib/site";
 
 const notes = await getCollection(
@@ -17,28 +18,24 @@ const notes = await getCollection(
 );
 const tree = buildSidebarTree(notes);
 const recentNotes = getRecentNotes(notes, 6);
-const twikooEnvId = import.meta.env.PUBLIC_TWIKOO_ENV_ID ?? "";
-const twikooRegion = import.meta.env.PUBLIC_TWIKOO_REGION ?? "";
-const twikooJsUrl =
-  import.meta.env.PUBLIC_TWIKOO_JS_URL ??
-  "https://cdn.jsdelivr.net/npm/twikoo@1.7.7/dist/twikoo.all.min.js";
+const recentGuestbook = await getCommentsBySlug("__guestbook__", 6);
 ---
 
 <BaseLayout title={SITE.title} description={SITE.description} tree={tree}>
   <section class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--soft)]/55 p-6 sm:p-8">
     <h1 class="hero-title font-intro mt-1 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
-      你好啊，我是亓qí。
+      你好呀，我是阿亓。
     </h1>
     <h1 class="hero-title font-intro mt-2 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
-      我打算在这里写写关于我的东西。
+      我打算在这里，写写关于我的东西。
     </h1>
 
     <div class="mt-6 max-w-6xl space-y-5 text-base leading-8 text-[var(--muted)]">
-      <p>我的朋友们总给我带来难以言说的感觉，以至于需要把我对他们的感受和回忆写下来才行，所以就有了「友人帐」。</p>
+      <p>朋友们总会给我带来难以言说的感受，所以我把关于他们的回忆写下来，就有了「友人帐」。</p>
       <p>「心情」部分是当我有一些情绪时想写的话，其实是情绪化时的产物。</p>
-      <p>「图文」我想放一些图片上来，我想尽可能地把每一个章节做成一个摄影集一样的东西。</p>
-      <p>如果你想联系到我请通过邮箱 ikkm541@gmail.com</p>
-      <p>祝你开心！</p>
+      <p>「图文」会放一些照片与片段，我想让每个章节都像一个小小摄影集。</p>
+      <p>如果你想联系我，可以发邮件到 `ikkm541@gmail.com`。</p>
+      <p>祝你开心。</p>
     </div>
 
     <div class="mt-7 flex flex-wrap gap-3">
@@ -59,11 +56,33 @@ const twikooJsUrl =
           href="/guestbook"
           class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-3 py-1.5 text-xs text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
         >
-          去留言板 ->
+          去留言
         </a>
       </div>
-      <div data-guestbook-target class="mt-4 space-y-3"></div>
-      <p data-guestbook-empty class="mt-5 text-sm text-[var(--muted)]">正在加载留言...</p>
+      {
+        recentGuestbook.length ? (
+          <div class="mt-4 space-y-3">
+            {recentGuestbook.map((item) => (
+              <article class="rounded-xl border border-[var(--border)]/80 bg-[var(--panel)] px-3 py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <p class="font-medium text-[var(--foreground)]">{item.nickname}</p>
+                  <time class="text-xs text-[var(--muted)]">
+                    {new Intl.DateTimeFormat("zh-CN", {
+                      month: "numeric",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(new Date(item.createdAt))}
+                  </time>
+                </div>
+                <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{item.content}</p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p class="mt-5 text-sm text-[var(--muted)]">还没有留言，欢迎来写第一条。</p>
+        )
+      }
     </div>
   </section>
 
@@ -120,151 +139,32 @@ const twikooJsUrl =
         href="/guestbook"
         class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-3 py-1.5 text-xs text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
       >
-        去留言板 ->
+        去留言
       </a>
     </div>
-    <div data-guestbook-target class="mt-4 space-y-3"></div>
-    <p data-guestbook-empty class="mt-5 text-sm text-[var(--muted)]">正在加载留言...</p>
-  </aside>
-
-  <script is:inline define:vars={{ twikooEnvId, twikooRegion, twikooJsUrl }}>
-    (() => {
-      const targetNodes = Array.from(document.querySelectorAll("[data-guestbook-target]"));
-      const emptyNodes = Array.from(document.querySelectorAll("[data-guestbook-empty]"));
-      if (!targetNodes.length || !emptyNodes.length) {
-        return;
-      }
-
-      const setEmpty = (message) => {
-        emptyNodes.forEach((node) => {
-          node.textContent = message;
-          node.classList.remove("hidden");
-        });
-      };
-
-      const setCards = (html) => {
-        targetNodes.forEach((node) => {
-          node.innerHTML = html;
-        });
-      };
-
-      if (!twikooEnvId) {
-        setEmpty("留言功能未启用。");
-        return;
-      }
-
-      const loadTwikoo = async () => {
-        if (window.twikoo?.getRecentComments) {
-          return window.twikoo;
-        }
-
-        if (window.__twikooLoaderPromise) {
-          return window.__twikooLoaderPromise;
-        }
-
-        window.__twikooLoaderPromise = new Promise((resolve, reject) => {
-          const existing = document.querySelector('script[data-twikoo-loader="true"]');
-
-          if (existing) {
-            existing.addEventListener("load", () => resolve(window.twikoo), { once: true });
-            existing.addEventListener(
-              "error",
-              () => reject(new Error("Twikoo script failed to load.")),
-              { once: true },
-            );
-            return;
-          }
-
-          const script = document.createElement("script");
-          script.src = twikooJsUrl;
-          script.defer = true;
-          script.dataset.twikooLoader = "true";
-          script.addEventListener("load", () => resolve(window.twikoo), { once: true });
-          script.addEventListener(
-            "error",
-            () => reject(new Error("Twikoo script failed to load.")),
-            { once: true },
-          );
-          document.head.append(script);
-        });
-
-        return window.__twikooLoaderPromise;
-      };
-
-      const escapeHtml = (value) =>
-        String(value ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/\"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-
-      const formatTime = (value) => {
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) {
-          return "时间未知";
-        }
-
-        return new Intl.DateTimeFormat("zh-CN", {
-          month: "numeric",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(date);
-      };
-
-      const render = (comments) => {
-        if (!Array.isArray(comments) || comments.length === 0) {
-          setCards("");
-          setEmpty("还没有留言，欢迎来写第一条。");
-          return;
-        }
-
-        const cards = comments.map((item) => {
-          const nick = escapeHtml(item.nick || "匿名访客");
-          const text = escapeHtml(item.commentText || "").replace(/\r?\n/g, "<br />");
-          const time = escapeHtml(item.relativeTime || formatTime(item.created));
-          return `
+    {
+      recentGuestbook.length ? (
+        <div class="mt-4 space-y-3">
+          {recentGuestbook.map((item) => (
             <article class="rounded-xl border border-[var(--border)]/80 bg-[var(--panel)] px-3 py-3">
               <div class="flex items-center justify-between gap-3">
-                <p class="font-medium text-[var(--foreground)]">${nick}</p>
-                <time class="text-xs text-[var(--muted)]">${time}</time>
+                <p class="font-medium text-[var(--foreground)]">{item.nickname}</p>
+                <time class="text-xs text-[var(--muted)]">
+                  {new Intl.DateTimeFormat("zh-CN", {
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(item.createdAt))}
+                </time>
               </div>
-              <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${text || "（空留言）"}</p>
+              <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{item.content}</p>
             </article>
-          `;
-        }).join("");
-
-        setCards(cards);
-        emptyNodes.forEach((node) => node.classList.add("hidden"));
-      };
-
-      const init = async () => {
-        setEmpty("正在加载留言...");
-        try {
-          const twikoo = await loadTwikoo();
-          const comments = await twikoo.getRecentComments({
-            envId: twikooEnvId,
-            ...(twikooRegion ? { region: twikooRegion } : {}),
-            urls: ["/guestbook"],
-            pageSize: 6,
-            includeReply: false,
-          });
-
-          render(Array.isArray(comments) ? comments.slice(0, 6) : []);
-        } catch (error) {
-          console.error("[Twikoo] Failed to load homepage recent guestbook comments.", error);
-          setEmpty("留言加载失败，请稍后再试。");
-        }
-      };
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init, { once: true });
-      } else {
-        init();
-      }
-
-      document.addEventListener("astro:page-load", init);
-    })();
-  </script>
+          ))}
+        </div>
+      ) : (
+        <p class="mt-5 text-sm text-[var(--muted)]">还没有留言，欢迎来写第一条。</p>
+      )
+    }
+  </aside>
 </BaseLayout>
