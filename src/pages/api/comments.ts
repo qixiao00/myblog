@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
+import { getAvatarByEmail, normalizeEmail } from "../../lib/avatar";
 import { getDb } from "../../lib/db";
 
 const CommentQuery = z.object({
@@ -8,6 +9,7 @@ const CommentQuery = z.object({
 
 const CommentPayload = z.object({
   slug: z.string().trim().min(1).max(240),
+  email: z.email().trim().max(180),
   nickname: z.string().trim().min(1).max(30),
   content: z.string().trim().min(1).max(1000),
   redirectTo: z.string().trim().optional(),
@@ -36,6 +38,7 @@ export const GET: APIRoute = async ({ url }) => {
     const rows = await sql<{
       id: number;
       slug: string;
+      email: string;
       nickname: string;
       content: string;
       createdAt: string;
@@ -43,6 +46,7 @@ export const GET: APIRoute = async ({ url }) => {
       select
         id,
         slug,
+        email,
         nickname,
         content,
         created_at as "createdAt"
@@ -53,10 +57,27 @@ export const GET: APIRoute = async ({ url }) => {
       limit 100
     `;
 
+    const comments = rows.map((row) => {
+      const { avatarUrl, avatarFallbackUrl } = getAvatarByEmail(
+        row.email,
+        `${row.id}-${row.nickname}`,
+      );
+
+      return {
+        id: row.id,
+        slug: row.slug,
+        nickname: row.nickname,
+        content: row.content,
+        createdAt: row.createdAt,
+        avatarUrl,
+        avatarFallbackUrl,
+      };
+    });
+
     return new Response(
       JSON.stringify({
         ok: true,
-        comments: rows,
+        comments,
       }),
       {
         status: 200,
@@ -105,11 +126,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     }
 
     const sql = getDb();
-    const { slug, nickname, content, redirectTo } = parsed.data;
+    const { slug, email, nickname, content, redirectTo } = parsed.data;
+    const normalizedEmail = normalizeEmail(email);
 
     await sql`
-      insert into comments (slug, nickname, content, status)
-      values (${slug}, ${nickname}, ${content}, 'approved')
+      insert into comments (slug, email, nickname, content, status)
+      values (${slug}, ${normalizedEmail}, ${nickname}, ${content}, 'approved')
     `;
 
     if (!contentType.includes("application/json")) {

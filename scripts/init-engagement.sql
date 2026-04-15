@@ -7,6 +7,7 @@ create table if not exists post_views (
 create table if not exists comments (
   id bigserial primary key,
   slug text not null,
+  email text not null default '',
   nickname text not null,
   content text not null,
   created_at timestamptz not null default now(),

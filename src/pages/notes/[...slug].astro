@@ -1,4 +1,4 @@
----
+﻿---
 import { getCollection, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
@@ -82,9 +82,22 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
       <h2 class="text-2xl font-semibold text-[var(--foreground)]">评论</h2>
       <p class="mt-2 text-sm text-[var(--muted)]">欢迎留言交流，理性友好讨论。</p>
 
-      <form method="post" action="/api/comments" class="surface-panel mt-6 space-y-4 rounded-[1.5rem] p-5">
+      <form method="post" action="/api/comments" data-email-gate class="surface-panel mt-6 space-y-4 rounded-[1.5rem] p-5">
         <input type="hidden" name="slug" value={currentNotePath} />
         <input type="hidden" name="redirectTo" value={Astro.url.pathname} />
+
+        <label class="block">
+          <span class="mb-2 block text-sm text-[var(--muted)]">邮箱（用于获取头像）</span>
+          <input
+            name="email"
+            type="email"
+            required
+            maxlength="180"
+            data-email-input
+            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+            placeholder="name@example.com"
+          />
+        </label>
 
         <label class="block">
           <span class="mb-2 block text-sm text-[var(--muted)]">昵称</span>
@@ -92,7 +105,9 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
             name="nickname"
             required
             maxlength="30"
-            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+            data-email-dependent
+            disabled
+            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="怎么称呼你"
           />
         </label>
@@ -104,14 +119,18 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
             required
             maxlength="1000"
             rows="4"
-            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+            data-email-dependent
+            disabled
+            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="写点什么..."
           ></textarea>
         </label>
 
         <button
           type="submit"
-          class="inline-flex items-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+          data-email-dependent
+          disabled
+          class="inline-flex items-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           发表评论
         </button>
@@ -156,6 +175,26 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
 
   <script is:inline>
     const slug = document.querySelector("[data-note-slug]")?.getAttribute("data-note-slug") ?? "";
+
+    const setupEmailGate = (form) => {
+      const emailInput = form.querySelector("[data-email-input]");
+      const dependentFields = form.querySelectorAll("[data-email-dependent]");
+      if (!emailInput || !dependentFields.length) return;
+
+      const toggle = () => {
+        const enabled = emailInput.value.trim().length > 0 && emailInput.checkValidity();
+        dependentFields.forEach((field) => {
+          field.disabled = !enabled;
+        });
+      };
+
+      emailInput.addEventListener("input", toggle);
+      emailInput.addEventListener("blur", toggle);
+      toggle();
+    };
+
+    document.querySelectorAll("form[data-email-gate]").forEach((form) => setupEmailGate(form));
+
     if (slug) {
       const body = JSON.stringify({ slug });
       const viewsNode = document.querySelector("[data-view-count]");
@@ -166,7 +205,7 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
+          .replace(/\"/g, "&quot;")
           .replace(/'/g, "&#39;");
 
       const renderComments = (items) => {
@@ -189,11 +228,23 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
                   timeStyle: "short",
                 }).format(createdAt);
 
+            const avatar = comment.avatarUrl || comment.avatarFallbackUrl || "";
+            const fallback = comment.avatarFallbackUrl || "";
+
             return `
               <article class="surface-panel rounded-[1.25rem] p-4">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
-                  <time class="text-xs text-[var(--muted)]">${time}</time>
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex min-w-0 items-center gap-3">
+                    <img
+                      src="${escapeHtml(avatar)}"
+                      data-fallback="${escapeHtml(fallback)}"
+                      alt="avatar"
+                      class="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
+                      onerror="if (this.dataset.fallback) { this.onerror=null; this.src=this.dataset.fallback; }"
+                    />
+                    <p class="truncate font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
+                  </div>
+                  <time class="shrink-0 text-xs text-[var(--muted)]">${time}</time>
                 </div>
                 <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
               </article>
@@ -219,18 +270,6 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
           viewsNode.textContent = Number(data.views).toLocaleString("zh-CN");
         })
         .catch(() => {});
-    } else {
-      const commentsList = document.querySelector("#comments-list");
-      const commentsEmpty = document.querySelector("#comments-empty");
-      if (commentsList) commentsList.innerHTML = "";
-      if (commentsEmpty) {
-        commentsEmpty.classList.remove("hidden");
-        commentsEmpty.textContent = "评论加载失败，请刷新后重试。";
-      }
-      const viewsNode = document.querySelector("[data-view-count]");
-      if (viewsNode) {
-        viewsNode.textContent = "--";
-      }
     }
   </script>
 </BaseLayout>

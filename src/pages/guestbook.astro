@@ -24,9 +24,22 @@ const tree = buildSidebarTree(notes);
 
   <section class="mt-8 border-t border-[var(--border)] pt-8">
     <h2 class="text-2xl font-semibold text-[var(--foreground)]">新增留言</h2>
-    <form method="post" action="/api/comments" class="surface-panel mt-6 space-y-4 rounded-[1.5rem] p-5">
+    <form method="post" action="/api/comments" data-email-gate class="surface-panel mt-6 space-y-4 rounded-[1.5rem] p-5">
       <input type="hidden" name="slug" value="__guestbook__" />
       <input type="hidden" name="redirectTo" value="/guestbook" />
+
+      <label class="block">
+        <span class="mb-2 block text-sm text-[var(--muted)]">邮箱（用于获取头像）</span>
+        <input
+          name="email"
+          type="email"
+          required
+          maxlength="180"
+          data-email-input
+          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+          placeholder="name@example.com"
+        />
+      </label>
 
       <label class="block">
         <span class="mb-2 block text-sm text-[var(--muted)]">昵称</span>
@@ -34,7 +47,9 @@ const tree = buildSidebarTree(notes);
           name="nickname"
           required
           maxlength="30"
-          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+          data-email-dependent
+          disabled
+          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
           placeholder="怎么称呼你"
         />
       </label>
@@ -46,24 +61,62 @@ const tree = buildSidebarTree(notes);
           required
           maxlength="1000"
           rows="5"
-          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
+          data-email-dependent
+          disabled
+          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
           placeholder="写点什么..."
         ></textarea>
       </label>
 
       <button
         type="submit"
-        class="inline-flex items-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+        data-email-dependent
+        disabled
+        class="inline-flex items-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         提交留言
       </button>
     </form>
   </section>
 
+  <section class="mt-8 border-t border-[var(--border)] pt-8">
+    <h2 class="text-2xl font-semibold text-[var(--foreground)]">友链</h2>
+    <div class="mt-6">
+      <a
+        href="https://awuzone.site"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="surface-panel block rounded-[1.25rem] p-4 transition hover:border-[var(--accent)]"
+      >
+        <p class="font-medium text-[var(--foreground)]">awuzone.site</p>
+        <p class="mt-2 text-sm text-[var(--muted)]">https://awuzone.site</p>
+      </a>
+    </div>
+  </section>
+
   <script is:inline>
     const listNode = document.querySelector("#guestbook-list");
     const emptyNode = document.querySelector("#guestbook-empty");
     const slug = "__guestbook__";
+
+    const setupEmailGate = (form) => {
+      const emailInput = form.querySelector("[data-email-input]");
+      const dependentFields = form.querySelectorAll("[data-email-dependent]");
+      if (!emailInput || !dependentFields.length) return;
+
+      const toggle = () => {
+        const enabled = emailInput.value.trim().length > 0 && emailInput.checkValidity();
+        dependentFields.forEach((field) => {
+          field.disabled = !enabled;
+        });
+      };
+
+      emailInput.addEventListener("input", toggle);
+      emailInput.addEventListener("blur", toggle);
+      toggle();
+    };
+
+    document.querySelectorAll("form[data-email-gate]").forEach((form) => setupEmailGate(form));
 
     const escapeHtml = (input) =>
       String(input ?? "")
@@ -93,11 +146,23 @@ const tree = buildSidebarTree(notes);
                 timeStyle: "short",
               }).format(createdAt);
 
+          const avatar = comment.avatarUrl || comment.avatarFallbackUrl || "";
+          const fallback = comment.avatarFallbackUrl || "";
+
           return `
             <article class="surface-panel rounded-[1.25rem] p-4">
-              <div class="flex items-center justify-between gap-3">
-                <p class="font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
-                <time class="text-xs text-[var(--muted)]">${time}</time>
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex min-w-0 items-center gap-3">
+                  <img
+                    src="${escapeHtml(avatar)}"
+                    data-fallback="${escapeHtml(fallback)}"
+                    alt="avatar"
+                    class="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
+                    onerror="if (this.dataset.fallback) { this.onerror=null; this.src=this.dataset.fallback; }"
+                  />
+                  <p class="truncate font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
+                </div>
+                <time class="shrink-0 text-xs text-[var(--muted)]">${time}</time>
               </div>
               <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
             </article>
