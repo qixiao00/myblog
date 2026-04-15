@@ -29,39 +29,41 @@ const tree = buildSidebarTree(notes);
       <input type="hidden" name="redirectTo" value="/guestbook" />
 
       <label class="block">
-        <span class="mb-2 block text-sm text-[var(--muted)]">邮箱（用于获取头像）</span>
+        <span class="mb-2 block text-sm text-[var(--muted)]">邮箱</span>
         <input
           name="email"
           type="email"
           required
           maxlength="180"
+          pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+          title="请输入有效邮箱地址，例如 name@example.com"
           data-email-input
           class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)]"
           placeholder="name@example.com"
         />
+        <p data-email-error class="mt-2 hidden text-xs text-rose-300">请输入正确的邮箱格式。</p>
       </label>
-      <div class="flex items-center gap-3 rounded-xl border border-[var(--border)] px-3 py-2">
-        <img
-          src="https://api.dicebear.com/9.x/identicon/svg?seed=preview"
-          data-email-preview
-          data-default="https://api.dicebear.com/9.x/identicon/svg?seed=preview"
-          alt="avatar preview"
-          class="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
-        />
-        <p class="text-xs text-[var(--muted)]">输入邮箱后会自动预览头像。</p>
-      </div>
 
       <label class="block">
         <span class="mb-2 block text-sm text-[var(--muted)]">昵称</span>
-        <input
-          name="nickname"
-          required
-          maxlength="30"
-          data-email-dependent
-          disabled
-          class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder="怎么称呼你"
-        />
+        <div class="flex items-center gap-3">
+          <img
+            src="https://api.dicebear.com/9.x/identicon/svg?seed=preview"
+            data-email-preview
+            data-default="https://api.dicebear.com/9.x/identicon/svg?seed=preview"
+            alt="avatar preview"
+            class="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
+          />
+          <input
+            name="nickname"
+            required
+            maxlength="30"
+            data-email-dependent
+            disabled
+            class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-0 transition focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder="怎么称呼你"
+          />
+        </div>
       </label>
 
       <label class="block">
@@ -98,6 +100,7 @@ const tree = buildSidebarTree(notes);
       const emailInput = form.querySelector("[data-email-input]");
       const dependentFields = form.querySelectorAll("[data-email-dependent]");
       const preview = form.querySelector("[data-email-preview]");
+      const emailError = form.querySelector("[data-email-error]");
       if (!emailInput || !dependentFields.length) return;
       let pendingAvatarTimer = null;
       let latestPreviewToken = 0;
@@ -146,6 +149,10 @@ const tree = buildSidebarTree(notes);
         dependentFields.forEach((field) => {
           field.disabled = !enabled;
         });
+        if (emailError) {
+          const hasValue = emailInput.value.trim().length > 0;
+          emailError.classList.toggle("hidden", !(hasValue && !emailInput.checkValidity()));
+        }
       };
 
       emailInput.addEventListener("input", toggle);
