@@ -340,3 +340,91 @@ h1.hero-title {
     font-size: 0.98rem;
   }
 }
+
+/* Twikoo */
+.twikoo-shell {
+  margin-top: 3rem;
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+}
+
+.twikoo-state {
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--soft) 55%, transparent);
+  padding: 0.9rem 1rem;
+  color: var(--muted);
+}
+
+#twikoo-comments .tk-comments {
+  color: var(--foreground);
+}
+
+#twikoo-comments .tk-comments-title {
+  display: none;
+}
+
+#twikoo-comments .tk-submit,
+#twikoo-comments .tk-preview,
+#twikoo-comments .tk-main,
+#twikoo-comments .tk-input,
+#twikoo-comments .tk-content,
+#twikoo-comments .tk-expand {
+  border-color: var(--border) !important;
+  background: color-mix(in srgb, var(--panel) 86%, transparent) !important;
+}
+
+#twikoo-comments .tk-content,
+#twikoo-comments .tk-content p,
+#twikoo-comments .tk-content pre,
+#twikoo-comments .tk-content code,
+#twikoo-comments .tk-content blockquote,
+#twikoo-comments .tk-content li {
+  color: var(--foreground) !important;
+}
+
+#twikoo-comments .tk-row,
+#twikoo-comments .tk-meta,
+#twikoo-comments .tk-time,
+#twikoo-comments .tk-extras,
+#twikoo-comments .tk-nick,
+#twikoo-comments .tk-tag {
+  color: var(--muted) !important;
+}
+
+#twikoo-comments .tk-action-link,
+#twikoo-comments .tk-action-icon,
+#twikoo-comments .tk-icon,
+#twikoo-comments .tk-expand,
+#twikoo-comments .tk-submit-action-icon {
+  color: var(--accent) !important;
+}
+
+#twikoo-comments .tk-avatar img,
+#twikoo-comments .tk-avatar-img {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+#twikoo-comments .el-input__inner,
+#twikoo-comments .el-textarea__inner,
+#twikoo-comments input,
+#twikoo-comments textarea {
+  border-color: var(--border) !important;
+  background: transparent !important;
+  color: var(--foreground) !important;
+}
+
+#twikoo-comments .el-input__inner::placeholder,
+#twikoo-comments .el-textarea__inner::placeholder,
+#twikoo-comments input::placeholder,
+#twikoo-comments textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 78%, transparent) !important;
+}
+
+#twikoo-comments .tk-submit .el-button,
+#twikoo-comments .el-button--primary {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border)) !important;
+  background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
+  color: var(--foreground) !important;
+}

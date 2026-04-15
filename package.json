@@ -9,7 +9,8 @@
     "prebuild": "node ./scripts/sync-vault-assets.mjs",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "export:twikoo": "node ./scripts/export-db-comments-to-twikoo.mjs"
   },
   "dependencies": {
     "@astrojs/vercel": "^9.0.5",
