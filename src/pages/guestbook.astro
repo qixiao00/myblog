@@ -12,8 +12,13 @@ const tree = buildSidebarTree(notes);
 
 <BaseLayout title="留言板" description="给站长留个言。" tree={tree}>
   <section>
-    <h1 class="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)]">留言板</h1>
-    <p class="mt-4 text-sm text-[var(--muted)]">欢迎留下你的想法、建议或者打个招呼。</p>
+    <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">留言板</p>
+    <h1 class="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)] sm:text-5xl">
+      采一朵花，留一句话。
+    </h1>
+    <p class="mt-5 max-w-3xl text-base leading-8 text-[var(--muted)]">
+      我很高兴知道你来过。
+    </p>
   </section>
 
   <section class="mt-8 border-t border-[var(--border)] pt-8">
