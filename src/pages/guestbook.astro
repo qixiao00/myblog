@@ -27,6 +27,11 @@ const tree = buildSidebarTree(notes);
     <form method="post" action="/api/comments" data-email-gate class="surface-panel mt-6 space-y-4 rounded-[1.5rem] p-5">
       <input type="hidden" name="slug" value="__guestbook__" />
       <input type="hidden" name="redirectTo" value="/guestbook" />
+      <input type="hidden" name="parentId" value="" data-parent-id />
+      <div data-reply-target class="hidden rounded-xl border border-[var(--border)] bg-[var(--soft)]/40 px-3 py-2 text-sm text-[var(--muted)]">
+        <span data-reply-text></span>
+        <button type="button" data-cancel-reply class="ml-3 text-[var(--accent)]">取消</button>
+      </div>
 
       <label class="block">
         <span class="mb-2 block text-sm text-[var(--muted)]">邮箱</span>
@@ -94,6 +99,11 @@ const tree = buildSidebarTree(notes);
   <script is:inline>
     const listNode = document.querySelector("#guestbook-list");
     const emptyNode = document.querySelector("#guestbook-empty");
+    const replyTargetBox = document.querySelector("[data-reply-target]");
+    const replyTargetText = document.querySelector("[data-reply-text]");
+    const parentIdInput = document.querySelector("[data-parent-id]");
+    const cancelReplyBtn = document.querySelector("[data-cancel-reply]");
+    const contentInput = document.querySelector("textarea[name='content']");
     const slug = "__guestbook__";
 
     const setupEmailGate = (form) => {
@@ -185,41 +195,103 @@ const tree = buildSidebarTree(notes);
         return;
       }
 
-      emptyNode.classList.add("hidden");
-      listNode.innerHTML = items
-        .map((comment) => {
-          const createdAt = new Date(comment.createdAt);
-          const time = Number.isNaN(createdAt.getTime())
-            ? ""
-            : new Intl.DateTimeFormat("zh-CN", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              }).format(createdAt);
+      const byParent = new Map();
+      for (const comment of items) {
+        const key = String(comment.parentId ?? "root");
+        const list = byParent.get(key) ?? [];
+        list.push(comment);
+        byParent.set(key, list);
+      }
 
-          const avatar = comment.avatarUrl || comment.avatarFallbackUrl || "";
-          const fallback = comment.avatarFallbackUrl || "";
+      const renderNode = (comment, depth = 0) => {
+        const createdAt = new Date(comment.createdAt);
+        const time = Number.isNaN(createdAt.getTime())
+          ? ""
+          : new Intl.DateTimeFormat("zh-CN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(createdAt);
 
-          return `
-            <article class="surface-panel rounded-[1.25rem] p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex min-w-0 items-center gap-3">
-                  <img
-                    src="${escapeHtml(avatar)}"
-                    data-fallback="${escapeHtml(fallback)}"
-                    alt="avatar"
-                    class="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
-                    onerror="if (this.dataset.fallback) { this.onerror=null; this.src=this.dataset.fallback; }"
-                  />
+        const avatar = comment.avatarUrl || comment.avatarFallbackUrl || "";
+        const fallback = comment.avatarFallbackUrl || "";
+        const replies = byParent.get(String(comment.id)) ?? [];
+
+        return `
+          <article class="surface-panel rounded-[1.25rem] p-4 ${depth > 0 ? "ml-8" : ""}">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <img
+                  src="${escapeHtml(avatar)}"
+                  data-fallback="${escapeHtml(fallback)}"
+                  alt="avatar"
+                  class="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
+                  onerror="if (this.dataset.fallback) { this.onerror=null; this.src=this.dataset.fallback; }"
+                />
+                <div class="min-w-0">
                   <p class="truncate font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
+                  <p class="mt-1 text-xs text-[var(--muted)]">${escapeHtml(comment.ipRegion || "未知地区")} · ${escapeHtml(comment.clientInfo || "Unknown Browser · Unknown OS")}</p>
                 </div>
-                <time class="shrink-0 text-xs text-[var(--muted)]">${time}</time>
               </div>
-              <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
-            </article>
-          `;
-        })
-        .join("");
+              <time class="shrink-0 text-xs text-[var(--muted)]">${time}</time>
+            </div>
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
+            <div class="mt-3 flex items-center gap-4 text-xs">
+              <button type="button" data-like-id="${comment.id}" class="text-[var(--accent)]">点赞 (${comment.likes ?? 0})</button>
+              <button type="button" data-reply-id="${comment.id}" data-reply-nickname="${escapeHtml(comment.nickname)}" class="text-[var(--accent)]">回复</button>
+            </div>
+            <div class="mt-3 space-y-3">${replies.map((item) => renderNode(item, depth + 1)).join("")}</div>
+          </article>
+        `;
+      };
+
+      const rootComments = byParent.get("root") ?? [];
+      emptyNode.classList.add("hidden");
+      listNode.innerHTML = rootComments.map((comment) => renderNode(comment)).join("");
     };
+
+    const setReplyTarget = (id, nickname) => {
+      if (!parentIdInput || !replyTargetBox || !replyTargetText) return;
+      parentIdInput.value = String(id);
+      replyTargetText.textContent = `正在回复 ${nickname}`;
+      replyTargetBox.classList.remove("hidden");
+      contentInput?.focus();
+    };
+
+    const clearReplyTarget = () => {
+      if (!parentIdInput || !replyTargetBox || !replyTargetText) return;
+      parentIdInput.value = "";
+      replyTargetText.textContent = "";
+      replyTargetBox.classList.add("hidden");
+    };
+
+    cancelReplyBtn?.addEventListener("click", clearReplyTarget);
+
+    listNode?.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const likeId = target.getAttribute("data-like-id");
+      if (likeId) {
+        fetch("/api/comments-like", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ commentId: Number(likeId) }),
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (!data?.ok) return;
+            target.textContent = `点赞 (${data.likes})`;
+          })
+          .catch(() => {});
+        return;
+      }
+
+      const replyId = target.getAttribute("data-reply-id");
+      if (replyId) {
+        const nickname = target.getAttribute("data-reply-nickname") ?? "";
+        setReplyTarget(Number(replyId), nickname);
+      }
+    });
 
     fetch(`/api/comments?slug=${encodeURIComponent(slug)}`)
       .then((res) => (res.ok ? res.json() : null))

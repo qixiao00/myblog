@@ -12,8 +12,47 @@ const CommentPayload = z.object({
   email: z.email().trim().max(180),
   nickname: z.string().trim().min(1).max(30),
   content: z.string().trim().min(1).max(1000),
+  parentId: z.coerce.number().int().positive().optional(),
   redirectTo: z.string().trim().optional(),
 });
+
+function getRegionFromHeaders(headers: Headers) {
+  const city = headers.get("x-vercel-ip-city")?.trim() ?? "";
+  const region = headers.get("x-vercel-ip-country-region")?.trim() ?? "";
+  const country = headers.get("x-vercel-ip-country")?.trim() ?? "";
+  const parts = [country, region, city].filter(Boolean);
+  return parts.length ? parts.join(" / ") : "未知地区";
+}
+
+function parseClientInfo(userAgent: string) {
+  const ua = userAgent.toLowerCase();
+
+  const browser = ua.includes("edg/")
+    ? "Edge"
+    : ua.includes("chrome/")
+      ? "Chrome"
+      : ua.includes("firefox/")
+        ? "Firefox"
+        : ua.includes("safari/") && !ua.includes("chrome/")
+          ? "Safari"
+          : ua.includes("micromessenger/")
+            ? "WeChat"
+            : "Unknown Browser";
+
+  const os = ua.includes("windows")
+    ? "Windows"
+    : ua.includes("android")
+      ? "Android"
+      : ua.includes("iphone") || ua.includes("ipad") || ua.includes("ios")
+        ? "iOS"
+        : ua.includes("mac os") || ua.includes("macintosh")
+          ? "macOS"
+          : ua.includes("linux")
+            ? "Linux"
+            : "Unknown OS";
+
+  return `${browser} · ${os}`;
+}
 
 export const GET: APIRoute = async ({ url }) => {
   try {
@@ -37,23 +76,31 @@ export const GET: APIRoute = async ({ url }) => {
     const sql = getDb();
     const rows = await sql<{
       id: number;
+      parentId: number | null;
       slug: string;
       email: string;
       nickname: string;
       content: string;
+      likes: number;
+      ipRegion: string;
+      clientInfo: string;
       createdAt: string;
     }[]>`
       select
         id,
+        parent_id as "parentId",
         slug,
         email,
         nickname,
         content,
+        likes,
+        ip_region as "ipRegion",
+        client_info as "clientInfo",
         created_at as "createdAt"
       from comments
       where slug = ${parsed.data.slug}
         and status = 'approved'
-      order by created_at desc
+      order by created_at asc
       limit 100
     `;
 
@@ -65,9 +112,13 @@ export const GET: APIRoute = async ({ url }) => {
 
       return {
         id: row.id,
+        parentId: row.parentId,
         slug: row.slug,
         nickname: row.nickname,
         content: row.content,
+        likes: row.likes,
+        ipRegion: row.ipRegion,
+        clientInfo: row.clientInfo,
         createdAt: row.createdAt,
         avatarUrl,
         avatarFallbackUrl,
@@ -126,12 +177,14 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     }
 
     const sql = getDb();
-    const { slug, email, nickname, content, redirectTo } = parsed.data;
+    const { slug, email, nickname, content, parentId, redirectTo } = parsed.data;
     const normalizedEmail = normalizeEmail(email);
+    const ipRegion = getRegionFromHeaders(request.headers);
+    const clientInfo = parseClientInfo(request.headers.get("user-agent") ?? "");
 
     await sql`
-      insert into comments (slug, email, nickname, content, status)
-      values (${slug}, ${normalizedEmail}, ${nickname}, ${content}, 'approved')
+      insert into comments (slug, parent_id, email, nickname, content, likes, ip_region, client_info, status)
+      values (${slug}, ${parentId ?? null}, ${normalizedEmail}, ${nickname}, ${content}, 0, ${ipRegion}, ${clientInfo}, 'approved')
     `;
 
     if (!contentType.includes("application/json")) {

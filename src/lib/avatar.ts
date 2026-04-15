@@ -36,6 +36,6 @@ export function getAvatarByEmail(email: string, seedHint?: string) {
   const hash = md5(normalized);
   return {
     avatarUrl: `https://www.gravatar.com/avatar/${hash}?s=96&d=404&r=g`,
-    avatarFallbackUrl: `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(hash)}`,
+    avatarFallbackUrl: `https://www.libravatar.org/avatar/${hash}?s=96&d=identicon`,
   };
 }
