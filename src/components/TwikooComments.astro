@@ -15,7 +15,7 @@ const region = Astro.props.region ?? import.meta.env.PUBLIC_TWIKOO_REGION;
 const cdnUrl =
   Astro.props.cdnUrl ??
   import.meta.env.PUBLIC_TWIKOO_JS_URL ??
-  "https://cdn.jsdelivr.net/npm/twikoo@1.7.7/dist/twikoo.all.min.js";
+  "/vendor/twikoo/twikoo.all.min.js";
 const title = Astro.props.title ?? "评论";
 ---
 
