@@ -361,6 +361,8 @@ h1.hero-title {
 }
 
 .twikoo-shell .twikoo .tk-submit {
+  position: relative;
+  z-index: 2;
   border: 1px solid color-mix(in srgb, var(--border) 76%, transparent) !important;
   border-radius: 0.8rem !important;
   background: color-mix(in srgb, var(--panel) 74%, transparent) !important;
@@ -395,11 +397,50 @@ h1.hero-title {
   gap: 0.65rem !important;
 }
 
+.twikoo-shell .twikoo .tk-meta-input {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input:has(input[name="link"]) {
+  display: none !important;
+}
+
+.twikoo-shell .twikoo .tk-row-actions-start {
+  position: relative;
+}
+
 .twikoo-shell .twikoo .tk-meta-input .el-input-group__prepend {
+  width: 3rem;
   border-color: color-mix(in srgb, var(--border) 70%, transparent) !important;
   background: color-mix(in srgb, var(--soft) 56%, transparent) !important;
   color: var(--foreground) !important;
-  font-weight: 600;
+  font-size: 0 !important;
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input-group__prepend::before {
+  content: "";
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  margin-inline: auto;
+  background: currentColor;
+  opacity: 0.88;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input:has(input[name="nick"]) .el-input-group__prepend::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input:has(input[name="mail"]) .el-input-group__prepend::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='16' x='2' y='4' rx='2'/%3E%3Cpath d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='16' x='2' y='4' rx='2'/%3E%3Cpath d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/%3E%3C/svg%3E");
 }
 
 .twikoo-shell .twikoo .tk-meta-input .el-input__inner {
@@ -506,6 +547,51 @@ h1.hero-title {
   border-radius: 999px;
 }
 
+.twikoo-shell .twikoo .OwO {
+  position: relative;
+}
+
+.twikoo-shell .twikoo .OwO .OwO-body {
+  position: absolute !important;
+  left: 0 !important;
+  top: auto !important;
+  bottom: calc(100% + 0.65rem) !important;
+  z-index: 30 !important;
+  width: min(34rem, calc(100vw - 3rem)) !important;
+  max-height: 15rem !important;
+  overflow: hidden !important;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
+  border-radius: 0.75rem !important;
+  background: var(--panel-strong) !important;
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.2) !important;
+  color: var(--foreground) !important;
+  backdrop-filter: blur(18px);
+}
+
+.twikoo-shell .twikoo .OwO .OwO-items {
+  max-height: 11.5rem !important;
+  overflow-y: auto !important;
+  background: transparent !important;
+}
+
+.twikoo-shell .twikoo .OwO .OwO-item {
+  color: var(--foreground) !important;
+}
+
+.twikoo-shell .twikoo .OwO .OwO-item:hover {
+  background: color-mix(in srgb, var(--soft) 74%, transparent) !important;
+}
+
+.twikoo-shell .twikoo .OwO .OwO-bar {
+  border-top: 1px solid color-mix(in srgb, var(--border) 76%, transparent) !important;
+  background: color-mix(in srgb, var(--panel) 72%, transparent) !important;
+}
+
+.twikoo-shell .twikoo .OwO .OwO-package-active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
+  color: var(--foreground) !important;
+}
+
 @media (max-width: 640px) {
   .twikoo-shell .twikoo .tk-submit {
     padding: 0.85rem !important;
@@ -514,5 +600,10 @@ h1.hero-title {
   .twikoo-shell .twikoo .tk-meta-input {
     display: grid !important;
     grid-template-columns: 1fr;
+  }
+
+  .twikoo-shell .twikoo .OwO .OwO-body {
+    left: -0.25rem !important;
+    width: calc(100vw - 2rem) !important;
   }
 }

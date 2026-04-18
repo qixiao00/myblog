@@ -4,3 +4,4 @@ dist
 public/_vault
 .vercel
 .env*.local
+.codex/
