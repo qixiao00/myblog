@@ -356,75 +356,163 @@ h1.hero-title {
   color: var(--muted);
 }
 
-#twikoo-comments .tk-comments {
+.twikoo-shell .twikoo .tk-comments {
   color: var(--foreground);
 }
 
-#twikoo-comments .tk-comments-title {
+.twikoo-shell .twikoo .tk-submit {
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent) !important;
+  border-radius: 0.8rem !important;
+  background: color-mix(in srgb, var(--panel) 74%, transparent) !important;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.08) !important;
+  padding: 1rem !important;
+  backdrop-filter: blur(18px);
+}
+
+.twikoo-shell .twikoo .tk-submit .tk-avatar,
+.twikoo-shell .twikoo .tk-avatar {
+  overflow: hidden;
+  border-radius: 999px !important;
+  clip-path: circle(50%);
+}
+
+.twikoo-shell .twikoo .tk-comments-title {
   display: none;
 }
 
-#twikoo-comments .tk-submit,
-#twikoo-comments .tk-preview,
-#twikoo-comments .tk-main,
-#twikoo-comments .tk-input,
-#twikoo-comments .tk-content,
-#twikoo-comments .tk-expand {
-  border-color: var(--border) !important;
-  background: color-mix(in srgb, var(--panel) 86%, transparent) !important;
+.twikoo-shell .twikoo .tk-preview,
+.twikoo-shell .twikoo .tk-main,
+.twikoo-shell .twikoo .tk-input,
+.twikoo-shell .twikoo .tk-content,
+.twikoo-shell .twikoo .tk-expand {
+  border-color: color-mix(in srgb, var(--border) 76%, transparent) !important;
+  border-radius: 0.65rem !important;
+  background: color-mix(in srgb, var(--panel) 52%, transparent) !important;
 }
 
-#twikoo-comments .tk-content,
-#twikoo-comments .tk-content p,
-#twikoo-comments .tk-content pre,
-#twikoo-comments .tk-content code,
-#twikoo-comments .tk-content blockquote,
-#twikoo-comments .tk-content li {
+.twikoo-shell .twikoo .tk-meta-input,
+.twikoo-shell .twikoo .tk-row.actions {
+  gap: 0.65rem !important;
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input-group__prepend {
+  border-color: color-mix(in srgb, var(--border) 70%, transparent) !important;
+  background: color-mix(in srgb, var(--soft) 56%, transparent) !important;
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input__inner {
+  border-left: 0 !important;
+}
+
+.twikoo-shell .twikoo .tk-content,
+.twikoo-shell .twikoo .tk-content p,
+.twikoo-shell .twikoo .tk-content pre,
+.twikoo-shell .twikoo .tk-content code,
+.twikoo-shell .twikoo .tk-content blockquote,
+.twikoo-shell .twikoo .tk-content li {
   color: var(--foreground) !important;
 }
 
-#twikoo-comments .tk-row,
-#twikoo-comments .tk-meta,
-#twikoo-comments .tk-time,
-#twikoo-comments .tk-extras,
-#twikoo-comments .tk-nick,
-#twikoo-comments .tk-tag {
+.twikoo-shell .twikoo .tk-row,
+.twikoo-shell .twikoo .tk-meta,
+.twikoo-shell .twikoo .tk-time,
+.twikoo-shell .twikoo .tk-extras,
+.twikoo-shell .twikoo .tk-nick,
+.twikoo-shell .twikoo .tk-tag {
   color: var(--muted) !important;
 }
 
-#twikoo-comments .tk-action-link,
-#twikoo-comments .tk-action-icon,
-#twikoo-comments .tk-icon,
-#twikoo-comments .tk-expand,
-#twikoo-comments .tk-submit-action-icon {
+.twikoo-shell .twikoo .tk-action-link,
+.twikoo-shell .twikoo .tk-action-icon,
+.twikoo-shell .twikoo .tk-icon,
+.twikoo-shell .twikoo .tk-expand,
+.twikoo-shell .twikoo .tk-submit-action-icon {
   color: var(--accent) !important;
 }
 
-#twikoo-comments .tk-avatar img,
-#twikoo-comments .tk-avatar-img {
-  border-radius: 999px;
-  border: 1px solid var(--border);
+.twikoo-shell .twikoo .tk-avatar img,
+.twikoo-shell .twikoo .tk-avatar svg,
+.twikoo-shell .twikoo .tk-avatar span,
+.twikoo-shell .twikoo .tk-avatar .tk-avatar-img,
+.twikoo-shell .twikoo .tk-avatar-img,
+.twikoo-shell .twikoo .tk-avatar a,
+.twikoo-shell .twikoo .tk-avatar div {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 999px !important;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  clip-path: circle(50%);
+  object-fit: cover;
 }
 
-#twikoo-comments .el-input__inner,
-#twikoo-comments .el-textarea__inner,
-#twikoo-comments input,
-#twikoo-comments textarea {
-  border-color: var(--border) !important;
-  background: transparent !important;
+.twikoo-shell .twikoo .el-input__inner,
+.twikoo-shell .twikoo .el-textarea__inner,
+.twikoo-shell .twikoo input,
+.twikoo-shell .twikoo textarea {
+  border-color: color-mix(in srgb, var(--border) 76%, transparent) !important;
+  border-radius: 0.55rem !important;
+  background: color-mix(in srgb, var(--bg) 38%, transparent) !important;
   color: var(--foreground) !important;
+  box-shadow: none !important;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
-#twikoo-comments .el-input__inner::placeholder,
-#twikoo-comments .el-textarea__inner::placeholder,
-#twikoo-comments input::placeholder,
-#twikoo-comments textarea::placeholder {
+.twikoo-shell .twikoo .el-input__inner:focus,
+.twikoo-shell .twikoo .el-textarea__inner:focus,
+.twikoo-shell .twikoo input:focus,
+.twikoo-shell .twikoo textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--border)) !important;
+  background: color-mix(in srgb, var(--panel-strong) 74%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent) !important;
+}
+
+.twikoo-shell .twikoo .el-input__inner::placeholder,
+.twikoo-shell .twikoo .el-textarea__inner::placeholder,
+.twikoo-shell .twikoo input::placeholder,
+.twikoo-shell .twikoo textarea::placeholder {
   color: color-mix(in srgb, var(--muted) 78%, transparent) !important;
 }
 
-#twikoo-comments .tk-submit .el-button,
-#twikoo-comments .el-button--primary {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border)) !important;
-  background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
+.twikoo-shell .twikoo .tk-submit .el-button,
+.twikoo-shell .twikoo .el-button--primary {
+  min-height: 2.25rem;
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border)) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--accent) 14%, transparent) !important;
   color: var(--foreground) !important;
+  font-weight: 600;
+}
+
+.twikoo-shell .twikoo .tk-submit .el-button:hover,
+.twikoo-shell .twikoo .el-button--primary:hover {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border)) !important;
+  background: color-mix(in srgb, var(--accent) 22%, transparent) !important;
+  color: var(--foreground) !important;
+}
+
+.twikoo-shell .twikoo .el-button--primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--bg) !important;
+}
+
+.twikoo-shell .twikoo .tk-submit-action-icon {
+  border-radius: 999px;
+}
+
+@media (max-width: 640px) {
+  .twikoo-shell .twikoo .tk-submit {
+    padding: 0.85rem !important;
+  }
+
+  .twikoo-shell .twikoo .tk-meta-input {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
 }
