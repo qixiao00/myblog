@@ -1,11 +1,15 @@
+import { getAvatarByEmail } from "./avatar";
 import { getDb } from "./db";
 
 export type Comment = {
   id: number;
   slug: string;
+  email: string;
   nickname: string;
   content: string;
   createdAt: string;
+  avatarUrl: string;
+  avatarFallbackUrl: string;
 };
 
 export type PostView = {
@@ -32,21 +36,31 @@ export async function getPostViews(slug: string) {
 export async function getCommentsBySlug(slug: string, limit = 100) {
   try {
     const sql = getDb();
+    const resolvedSlug = slug === "/guestbook" ? "__guestbook__" : slug;
+
     const rows = await sql<Comment[]>`
       select
         id,
         slug,
+        email,
         nickname,
         content,
         created_at as "createdAt"
       from comments
-      where slug = ${slug}
+      where slug = ${resolvedSlug}
         and status = 'approved'
       order by created_at desc
       limit ${limit}
     `;
 
-    return rows;
+    return rows.map((row) => {
+      const { avatarUrl, avatarFallbackUrl } = getAvatarByEmail(row.email, `${row.id}-${row.nickname}`);
+      return {
+        ...row,
+        avatarUrl,
+        avatarFallbackUrl,
+      };
+    });
   } catch {
     return [];
   }

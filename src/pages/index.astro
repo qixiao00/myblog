@@ -18,7 +18,7 @@ const notes = await getCollection(
 );
 const tree = buildSidebarTree(notes);
 const recentNotes = getRecentNotes(notes, 6);
-const recentGuestbook = await getCommentsBySlug("__guestbook__", 6);
+const recentGuestbook = await getCommentsBySlug("/guestbook", 6);
 ---
 
 <BaseLayout title={SITE.title} description={SITE.description} tree={tree}>
@@ -63,19 +63,32 @@ const recentGuestbook = await getCommentsBySlug("__guestbook__", 6);
         recentGuestbook.length ? (
           <div class="mt-4 space-y-3">
             {recentGuestbook.map((item) => (
-              <article class="rounded-xl border border-[var(--border)]/80 bg-[var(--panel)] px-3 py-3">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="font-medium text-[var(--foreground)]">{item.nickname}</p>
-                  <time class="text-xs text-[var(--muted)]">
-                    {new Intl.DateTimeFormat("zh-CN", {
-                      month: "numeric",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }).format(new Date(item.createdAt))}
-                  </time>
+              <article class="rounded-2xl border border-[var(--border)]/80 bg-[var(--panel)] px-3 py-3">
+                <div class="flex items-start gap-3">
+                  <div class="h-11 w-11 shrink-0 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--soft)]/60">
+                    <img
+                      src={item.avatarUrl || item.avatarFallbackUrl}
+                      alt=""
+                      class="h-full w-full object-cover"
+                      loading="lazy"
+                      referrerpolicy="no-referrer"
+                    />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-3">
+                      <p class="truncate font-medium text-[var(--foreground)]">{item.nickname}</p>
+                      <time class="shrink-0 text-xs text-[var(--muted)]">
+                        {new Intl.DateTimeFormat("zh-CN", {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }).format(new Date(item.createdAt))}
+                      </time>
+                    </div>
+                    <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{item.content}</p>
+                  </div>
                 </div>
-                <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{item.content}</p>
               </article>
             ))}
           </div>
@@ -144,24 +157,37 @@ const recentGuestbook = await getCommentsBySlug("__guestbook__", 6);
     </div>
     {
       recentGuestbook.length ? (
-        <div class="mt-4 space-y-3">
-          {recentGuestbook.map((item) => (
-            <article class="rounded-xl border border-[var(--border)]/80 bg-[var(--panel)] px-3 py-3">
-              <div class="flex items-center justify-between gap-3">
-                <p class="font-medium text-[var(--foreground)]">{item.nickname}</p>
-                <time class="text-xs text-[var(--muted)]">
-                  {new Intl.DateTimeFormat("zh-CN", {
-                    month: "numeric",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).format(new Date(item.createdAt))}
-                </time>
-              </div>
-              <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{item.content}</p>
-            </article>
-          ))}
-        </div>
+          <div class="mt-4 space-y-3">
+            {recentGuestbook.map((item) => (
+              <article class="rounded-2xl border border-[var(--border)]/80 bg-[var(--panel)] px-3 py-3">
+                <div class="flex items-start gap-3">
+                  <div class="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--soft)]/60">
+                    <img
+                      src={item.avatarUrl || item.avatarFallbackUrl}
+                      alt=""
+                      class="h-full w-full object-cover"
+                      loading="lazy"
+                      referrerpolicy="no-referrer"
+                    />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-3">
+                      <p class="truncate font-medium text-[var(--foreground)]">{item.nickname}</p>
+                      <time class="shrink-0 text-xs text-[var(--muted)]">
+                        {new Intl.DateTimeFormat("zh-CN", {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }).format(new Date(item.createdAt))}
+                      </time>
+                    </div>
+                    <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">{item.content}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
       ) : (
         <p class="mt-5 text-sm text-[var(--muted)]">还没有留言，欢迎来写第一条。</p>
       )
