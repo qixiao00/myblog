@@ -1,6 +1,6 @@
 ﻿---
 import { getCollection } from "astro:content";
-import SiteComments from "../components/SiteComments.astro";
+import TwikooComments from "../components/TwikooComments.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { buildSidebarTree } from "../lib/notes";
 
@@ -18,5 +18,5 @@ const tree = buildSidebarTree(notes);
     </h1>
   </section>
 
-  <SiteComments path="/guestbook" title="留言板" />
+  <TwikooComments path="/guestbook" title="留言板" />
 </BaseLayout>

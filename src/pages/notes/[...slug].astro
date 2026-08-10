@@ -1,6 +1,6 @@
 ﻿---
 import { getCollection, render } from "astro:content";
-import SiteComments from "../../components/SiteComments.astro";
+import TwikooComments from "../../components/TwikooComments.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import {
   buildSidebarTree,
@@ -112,7 +112,7 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
       )
     }
 
-  <SiteComments path={noteUrl} title="评论" />
+  <TwikooComments path={noteUrl} title="评论" />
   </article>
 
   <script is:inline>
