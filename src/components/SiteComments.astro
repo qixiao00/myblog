@@ -1,0 +1,96 @@
+---
+interface Props {
+  path: string;
+  title?: string;
+}
+
+const { path, title = "留言" } = Astro.props;
+---
+
+<section class="site-comments">
+  <div class="flex items-center justify-between gap-4">
+    <h2 class="text-2xl font-semibold tracking-tight text-[var(--foreground)]">{title}</h2>
+    <span class="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">留言</span>
+  </div>
+
+  <div data-site-comments-list class="mt-6 space-y-3">
+    <p class="text-sm text-[var(--muted)]">留言加载中...</p>
+  </div>
+
+  <form data-site-comments-form class="mt-8 space-y-4 border-t border-[var(--border)] pt-6">
+    <div class="grid gap-4 sm:grid-cols-2">
+      <label class="block">
+        <span class="mb-2 block text-sm text-[var(--muted)]">昵称</span>
+        <input name="nickname" required maxlength="30" class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]" />
+      </label>
+      <label class="block">
+        <span class="mb-2 block text-sm text-[var(--muted)]">邮箱</span>
+        <input name="email" type="email" required maxlength="180" class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]" />
+      </label>
+    </div>
+    <label class="block">
+      <span class="mb-2 block text-sm text-[var(--muted)]">留言内容</span>
+      <textarea name="content" required maxlength="1000" rows="4" class="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm leading-7 text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"></textarea>
+    </label>
+    <button type="submit" class="inline-flex items-center rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90">发布留言</button>
+    <p data-site-comments-state class="text-sm text-[var(--muted)]"></p>
+  </form>
+</section>
+
+<script is:inline define:vars={{ path }}>
+  (() => {
+    const list = document.querySelector("[data-site-comments-list]");
+    const form = document.querySelector("[data-site-comments-form]");
+    const state = document.querySelector("[data-site-comments-state]");
+    if (!list || !form) return;
+
+    const escapeHtml = (value) => String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+    const render = (comments) => {
+      if (!comments.length) {
+        list.innerHTML = '<p class="text-sm text-[var(--muted)]">还没有留言，欢迎写下第一条。</p>';
+        return;
+      }
+      list.innerHTML = comments.map((comment) => `
+        <article class="border-b border-[var(--border)]/60 pb-4">
+          <div class="flex items-center justify-between gap-3">
+            <p class="font-medium text-[var(--foreground)]">${escapeHtml(comment.nickname)}</p>
+            <time class="text-xs text-[var(--muted)]">${new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium" }).format(new Date(comment.createdAt))}</time>
+          </div>
+          <p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--muted)]">${escapeHtml(comment.content)}</p>
+        </article>`).join("");
+    };
+
+    const load = async () => {
+      const response = await fetch(`/api/comments?slug=${encodeURIComponent(path)}`);
+      const data = await response.json();
+      render(data.comments ?? []);
+    };
+
+    load().catch(() => { list.innerHTML = '<p class="text-sm text-[var(--muted)]">留言加载失败，请稍后刷新重试。</p>'; });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector("button[type=submit]");
+      if (button) button.disabled = true;
+      if (state) state.textContent = "正在发布...";
+      const payload = Object.fromEntries(new FormData(form));
+      try {
+        const response = await fetch("/api/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, slug: path }) });
+        if (!response.ok) throw new Error("comment request failed");
+        form.reset();
+        if (state) state.textContent = "留言已发布";
+        await load();
+      } catch {
+        if (state) state.textContent = "发布失败，请稍后重试";
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+  })();
+</script>
