@@ -1,9 +1,5 @@
-create table if not exists post_views (
-  slug text primary key,
-  views bigint not null default 0,
-  updated_at timestamptz not null default now()
-);
-
+-- Apply before deploying the deduplicated /api/view endpoint.
+-- Existing post_views totals are preserved as a historical baseline.
 create table if not exists post_view_visitors (
   slug text not null,
   visitor_hash char(64) not null,

@@ -1,4 +1,5 @@
 @import url("https://cdn.staticfile.net/lxgw-wenkai-screen-webfont/1.7.0/lxgwwenkaiscreen.css");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap");
 
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
@@ -8,11 +9,6 @@
   src: url("/fonts/SmileySans-Oblique.ttf.woff2") format("woff2");
   font-display: swap;
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap");
-
-
-
 
 :root {
   color-scheme: light;
@@ -354,6 +350,13 @@ h1.hero-title {
   background: color-mix(in srgb, var(--soft) 55%, transparent);
   padding: 0.9rem 1rem;
   color: var(--muted);
+}
+
+.twikoo-state button {
+  margin-left: 0.25rem;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
 }
 
 .twikoo-shell .twikoo .tk-comments {

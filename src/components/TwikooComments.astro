@@ -1,6 +1,5 @@
 ﻿---
 interface Props {
-  envId?: string;
   path?: string;
   lang?: string;
   region?: string;
@@ -8,7 +7,9 @@ interface Props {
   title?: string;
 }
 
-const envId = Astro.props.envId ?? import.meta.env.PUBLIC_TWIKOO_ENV_ID;
+const enabled = Boolean(
+  import.meta.env.TWIKOO_UPSTREAM_URL || import.meta.env.PUBLIC_TWIKOO_ENV_ID,
+);
 const path = Astro.props.path;
 const lang = Astro.props.lang ?? import.meta.env.PUBLIC_TWIKOO_LANG ?? "zh-CN";
 const region = Astro.props.region ?? import.meta.env.PUBLIC_TWIKOO_REGION;
@@ -25,11 +26,11 @@ const title = Astro.props.title ?? "评论";
     <span class="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Twikoo</span>
   </div>
 
-  {envId ? (
+  {enabled ? (
     <>
       <div id="twikoo-comments" class="mt-6"></div>
 
-      <script is:inline define:vars={{ envId, path, lang, region, cdnUrl }}>
+      <script is:inline define:vars={{ path, lang, region, cdnUrl }}>
         (() => {
           const containerId = "twikoo-comments";
           let started = false;
@@ -45,16 +46,7 @@ const title = Astro.props.title ?? "评论";
 
             window.__twikooLoaderPromise = new Promise((resolve, reject) => {
               const existing = document.querySelector('script[data-twikoo-loader="true"]');
-
-              if (existing) {
-                existing.addEventListener("load", () => resolve(window.twikoo), { once: true });
-                existing.addEventListener(
-                  "error",
-                  () => reject(new Error("Twikoo script failed to load.")),
-                  { once: true },
-                );
-                return;
-              }
+              existing?.remove();
 
               const script = document.createElement("script");
               script.src = cdnUrl;
@@ -67,6 +59,10 @@ const title = Astro.props.title ?? "评论";
                 { once: true },
               );
               document.head.append(script);
+            }).catch((error) => {
+              window.__twikooLoaderPromise = null;
+              document.querySelector('script[data-twikoo-loader="true"]')?.remove();
+              throw error;
             });
 
             return window.__twikooLoaderPromise;
@@ -89,7 +85,7 @@ const title = Astro.props.title ?? "评论";
             try {
               const twikoo = await loadTwikoo();
               await twikoo.init({
-                envId,
+                envId: `${window.location.origin}/api/twikoo`,
                 el: `#${containerId}`,
                 path: commentPath,
                 lang,
@@ -97,8 +93,10 @@ const title = Astro.props.title ?? "评论";
                 ...(region ? { region } : {}),
               });
             } catch (error) {
+              started = false;
               console.error("[Twikoo] Failed to initialize comments.", error);
-              container.innerHTML = '<p class="twikoo-state">评论加载失败，请稍后刷新重试。</p>';
+              container.innerHTML = '<p class="twikoo-state">评论加载失败，请稍后重试。 <button type="button" data-twikoo-retry>重试</button></p>';
+              container.querySelector("[data-twikoo-retry]")?.addEventListener("click", initTwikoo, { once: true });
             }
           };
 

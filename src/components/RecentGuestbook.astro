@@ -5,12 +5,14 @@ interface Props {
 }
 
 const { limit = 6, compact = false } = Astro.props;
-const envId = import.meta.env.PUBLIC_TWIKOO_ENV_ID;
+const enabled = Boolean(
+  import.meta.env.TWIKOO_UPSTREAM_URL || import.meta.env.PUBLIC_TWIKOO_ENV_ID,
+);
 ---
 
 <section
   data-twikoo-recent
-  data-twikoo-env-id={envId}
+  data-twikoo-enabled={enabled ? "true" : "false"}
   data-twikoo-limit={limit}
   data-twikoo-compact={compact ? "true" : "false"}
 >
@@ -29,29 +31,35 @@ const envId = import.meta.env.PUBLIC_TWIKOO_ENV_ID;
 </section>
 
 <script>
-  const escapeHtml = (value) => String(value ?? "")
+  type GuestbookComment = {
+    nick?: string;
+    comment?: string;
+    created: string | number;
+  };
+
+  const escapeHtml = (value: unknown) => String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-  const commentText = (html) => {
+  const commentText = (html: unknown) => {
     const documentFragment = new DOMParser().parseFromString(String(html ?? ""), "text/html");
     return documentFragment.body.textContent?.trim() ?? "";
   };
 
-  const formatTime = (timestamp) => new Intl.DateTimeFormat("zh-CN", {
+  const formatTime = (timestamp: string | number) => new Intl.DateTimeFormat("zh-CN", {
     month: "numeric",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(timestamp));
 
-  const cacheKeyFor = (envId) => `twikoo-recent:${envId}:/guestbook`;
+  const cacheKey = "twikoo-recent:/guestbook";
 
-  const renderComments = (container, comments, compact) => {
-    const list = container.querySelector("[data-twikoo-recent-list]");
+  const renderComments = (container: HTMLElement, comments: GuestbookComment[], compact: boolean) => {
+    const list = container.querySelector<HTMLElement>("[data-twikoo-recent-list]");
     if (!list) return;
 
     if (!comments.length) {
@@ -80,27 +88,26 @@ const envId = import.meta.env.PUBLIC_TWIKOO_ENV_ID;
     }).join("");
   };
 
-  const loadRecentComments = async (container) => {
-    const envId = container.dataset.twikooEnvId;
+  const loadRecentComments = async (container: HTMLElement) => {
     const limit = Number(container.dataset.twikooLimit ?? 6);
     const compact = container.dataset.twikooCompact === "true";
-    if (!envId?.startsWith("http")) {
-      renderComments(container, [], compact);
+    const list = container.querySelector<HTMLElement>("[data-twikoo-recent-list]");
+    if (container.dataset.twikooEnabled !== "true") {
+      if (list) list.textContent = "留言区暂未启用。";
       return;
     }
 
-    const cacheKey = cacheKeyFor(envId);
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       try {
-        const { comments } = JSON.parse(cached);
-        renderComments(container, comments, compact);
+        const { comments } = JSON.parse(cached) as { comments: GuestbookComment[] };
+        if (Array.isArray(comments)) renderComments(container, comments, compact);
       } catch {
         sessionStorage.removeItem(cacheKey);
       }
     }
 
-    const response = await fetch(envId, {
+    const response = await fetch("/api/twikoo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -112,18 +119,18 @@ const envId = import.meta.env.PUBLIC_TWIKOO_ENV_ID;
     });
     if (!response.ok) throw new Error("Twikoo request failed");
 
-    const payload = await response.json();
+    const payload = await response.json() as { accessToken?: string; data?: GuestbookComment[] };
     if (payload.accessToken) localStorage.setItem("twikoo-access-token", payload.accessToken);
-    const comments = (payload.data ?? []).slice(0, limit);
+    const comments = (Array.isArray(payload.data) ? payload.data : []).slice(0, limit);
     sessionStorage.setItem(cacheKey, JSON.stringify({ comments }));
     renderComments(container, comments, compact);
   };
 
-  document.querySelectorAll("[data-twikoo-recent]").forEach((container) => {
+  document.querySelectorAll<HTMLElement>("[data-twikoo-recent]").forEach((container) => {
     loadRecentComments(container).catch(() => {
-      const list = container.querySelector("[data-twikoo-recent-list]");
-      if (list && !list.children.length) {
-        list.innerHTML = '<p class="text-sm text-[var(--muted)]">留言加载失败，请稍后刷新重试。</p>';
+      const list = container.querySelector<HTMLElement>("[data-twikoo-recent-list]");
+      if (list && list.textContent?.includes("留言加载中")) {
+        list.textContent = "留言加载失败，请稍后刷新重试。";
       }
     });
   });

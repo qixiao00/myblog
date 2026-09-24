@@ -1,21 +1,25 @@
 ---
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { getStatsOverview } from "../lib/engagement";
+import { getViewStats } from "../lib/engagement";
 import { buildSidebarTree, noteUrlFromId } from "../lib/notes";
+import { getTwikooCommentCount } from "../lib/twikoo";
 
 const notes = await getCollection(
   "notes",
   ({ data }) => !import.meta.env.PROD || !data.draft,
 );
 const tree = buildSidebarTree(notes);
-const stats = await getStatsOverview(30);
+const [stats, commentCount] = await Promise.all([
+  getViewStats(30),
+  getTwikooCommentCount(["/guestbook", ...notes.map((note) => noteUrlFromId(note.id))]),
+]);
 ---
 
 <BaseLayout title="站点统计" description="站点访问与互动统计。" tree={tree}>
   <section>
     <h1 class="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)]">站点统计</h1>
-    <p class="mt-4 text-sm text-[var(--muted)]">数据包含全站文章浏览量与公开评论。</p>
+    <p class="mt-4 text-sm text-[var(--muted)]">新浏览量按匿名浏览器每日去重，历史计数未去重；评论数来自 Twikoo，包含回复。</p>
   </section>
 
   <section class="mt-8 grid gap-4 md:grid-cols-2">
@@ -25,7 +29,7 @@ const stats = await getStatsOverview(30);
     </article>
     <article class="surface-panel rounded-[1.5rem] p-5">
       <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">总评论数</p>
-      <p class="mt-3 text-4xl font-semibold text-[var(--foreground)]">{stats.comments.toLocaleString("zh-CN")}</p>
+      <p class="mt-3 text-4xl font-semibold text-[var(--foreground)]">{commentCount === null ? "暂不可用" : commentCount.toLocaleString("zh-CN")}</p>
     </article>
   </section>
 
