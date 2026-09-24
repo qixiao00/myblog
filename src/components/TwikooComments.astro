@@ -82,6 +82,32 @@ const title = Astro.props.title ?? "评论";
             const commentPath = path || window.location.pathname;
             container.innerHTML = "";
 
+            let autoLoadObserver;
+            let autoLoadInFlight = false;
+            const loadMoreIfVisible = () => {
+              if (autoLoadInFlight) return;
+              const expand = container.querySelector(".tk-expand");
+              if (!expand) return;
+
+              const bounds = expand.getBoundingClientRect();
+              const nearViewport = bounds.top < window.innerHeight + 160 && bounds.bottom > -160;
+              if (!nearViewport) return;
+
+              autoLoadInFlight = true;
+              expand.click();
+            };
+            const watchForMore = () => {
+              const expand = container.querySelector(".tk-expand");
+              if (!expand || !("IntersectionObserver" in window)) return;
+
+              autoLoadObserver?.disconnect();
+              autoLoadObserver = new IntersectionObserver((entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) loadMoreIfVisible();
+              }, { rootMargin: "160px 0px" });
+              autoLoadObserver.observe(expand);
+              window.setTimeout(loadMoreIfVisible, 100);
+            };
+
             try {
               const twikoo = await loadTwikoo();
               await twikoo.init({
@@ -90,6 +116,10 @@ const title = Astro.props.title ?? "评论";
                 path: commentPath,
                 lang,
                 requiredMeta: ["nick", "mail"],
+                onCommentLoaded: () => {
+                  autoLoadInFlight = false;
+                  window.setTimeout(watchForMore, 0);
+                },
                 ...(region ? { region } : {}),
               });
             } catch (error) {

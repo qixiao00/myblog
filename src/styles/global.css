@@ -401,7 +401,20 @@ h1.hero-title {
 }
 
 .twikoo-shell .twikoo .tk-meta-input {
+  display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input {
+  display: flex;
+  width: auto;
+  min-width: 0;
+  height: 2.75rem;
+  margin: 0 !important;
+}
+
+.twikoo-shell .twikoo .tk-meta-input .el-input + .el-input {
+  margin: 0 !important;
 }
 
 .twikoo-shell .twikoo .tk-meta-input .el-input:has(input[name="link"]) {
@@ -414,6 +427,15 @@ h1.hero-title {
 
 .twikoo-shell .twikoo .tk-meta-input .el-input-group__prepend {
   width: 3rem;
+  min-width: 3rem;
+  flex: 0 0 3rem;
+  box-sizing: border-box;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0.55rem 0 0 0.55rem !important;
   border-color: color-mix(in srgb, var(--border) 70%, transparent) !important;
   background: color-mix(in srgb, var(--soft) 56%, transparent) !important;
   color: var(--foreground) !important;
@@ -425,7 +447,7 @@ h1.hero-title {
   display: block;
   width: 1rem;
   height: 1rem;
-  margin-inline: auto;
+  margin: 0;
   background: currentColor;
   opacity: 0.88;
   mask-repeat: no-repeat;
@@ -447,7 +469,14 @@ h1.hero-title {
 }
 
 .twikoo-shell .twikoo .tk-meta-input .el-input__inner {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 0.85rem;
   border-left: 0 !important;
+  border-radius: 0 0.55rem 0.55rem 0 !important;
 }
 
 .twikoo-shell .twikoo .tk-content,
@@ -595,13 +624,12 @@ h1.hero-title {
   color: var(--foreground) !important;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .twikoo-shell .twikoo .tk-submit {
     padding: 0.85rem !important;
   }
 
   .twikoo-shell .twikoo .tk-meta-input {
-    display: grid !important;
     grid-template-columns: 1fr;
   }
 
