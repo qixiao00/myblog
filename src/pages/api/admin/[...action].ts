@@ -29,11 +29,11 @@ const handler: APIRoute = async (context: APIContext) => {
       checkLoginRate(context.clientAddress || "unknown");
       const input = credentials.parse(await readJson(request, 4096));
       // Check the encryption configuration before changing the provider password.
-      const tokenForRepo = env("ADMIN_GITHUB_TOKEN") || input.githubToken;
       if (action === "setup") {
         if (input.password.length < 12) throw new AdminError(400, "首次设置的密码至少需要 12 个字符。");
-        if (!tokenForRepo) throw new AdminError(400, "首次初始化需要 GitHub 凭据验证仓库所有者身份。");
-        await verifyOwner(tokenForRepo);
+        // A configured publishing token proves server access, never the caller's identity.
+        if (!input.githubToken) throw new AdminError(400, "首次初始化需要 GitHub 凭据验证仓库所有者身份。");
+        await verifyOwner(input.githubToken);
       } else if (input.githubToken) {
         await verifyOwner(input.githubToken);
       }

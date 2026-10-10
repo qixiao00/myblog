@@ -59,6 +59,12 @@ test("first setup rejects a non-owner before changing the provider password", as
   await assert.rejects(verifyOwner("test"), /所有者/);
   const ctx = context("setup", "POST", { password: "a-long-test-password", githubToken: "test" }); const result = await POST(ctx as any); assert.equal(result.status, 403); assert.equal(changed, false); assert.equal(ctx.jar.size, 0);
 });
+test("a server publishing token cannot stand in for the setup caller's identity", async () => {
+  process.env.ADMIN_GITHUB_TOKEN = "server-only-publishing-token";
+  let requested = false; mockFetch(() => { requested = true; throw new Error("Unexpected request"); });
+  try { const result = await POST(context("setup", "POST", { password: "a-long-test-password" }) as any); assert.equal(result.status, 400); assert.equal(requested, false); }
+  finally { delete process.env.ADMIN_GITHUB_TOKEN; }
+});
 test("owner initialization verifies both identities and creates an HttpOnly session", async () => {
   let changed = false;
   mockFetch((url, body) => { if (url.endsWith("/user")) return response({ login: "qixiao00" }); if (url.includes("api.github.com/repos/")) return response({ permissions: { push: true } }); if (body.event === "GET_PASSWORD_STATUS") return response({ status: false }); if (body.event === "SET_PASSWORD") { changed = true; return response({ code: 0 }); } if (body.event === "LOGIN") return response({ code: 0 }); if (body.event === "GET_CONFIG") return response({ config: { IS_ADMIN: true } }); throw new Error("Unexpected request"); });

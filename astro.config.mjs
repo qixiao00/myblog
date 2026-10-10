@@ -21,6 +21,9 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    // Bundle this CommonJS/ESM boundary so Vercel's runtime loader never
+    // needs to require the ESM-only htmlparser2 package from sanitize-html.
+    ssr: { noExternal: ["sanitize-html", "htmlparser2"] },
   },
   markdown: {
     remarkPlugins: [
