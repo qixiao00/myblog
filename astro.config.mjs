@@ -18,6 +18,17 @@ export default defineConfig({
   output: "server",
   security: {
     checkOrigin: false,
+    allowedDomains: [
+      { hostname: "qixiao.online", protocol: "https" },
+      { hostname: "www.qixiao.online", protocol: "https" },
+      { hostname: "qixiao77.vercel.app", protocol: "https" },
+      { hostname: "myblog-qixiao00s-projects.vercel.app", protocol: "https" },
+      { hostname: "myblog-git-master-qixiao00s-projects.vercel.app", protocol: "https" },
+      ...[process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
+        .filter(Boolean).map(hostname => ({ hostname, protocol: "https" })),
+      { hostname: "localhost", protocol: "http" },
+      { hostname: "127.0.0.1", protocol: "http" },
+    ],
   },
   vite: {
     plugins: [tailwindcss()],
