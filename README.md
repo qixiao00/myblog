@@ -67,3 +67,5 @@ draft: false
 ## 部署
 
 将仓库的 `master` 分支连接到 Vercel，并设置 `POSTGRES_URL`、`TWIKOO_UPSTREAM_URL`。首次部署前对数据库执行 `scripts/init-engagement.sql`；已有部署按上文执行迁移。之后推送到 `master` 即可触发部署。
+
+Vercel 使用 `pnpm@10.33.0` 和 `pnpm-lock.yaml`。更新依赖时，请同步 `package-lock.json` 和 `pnpm-lock.yaml`，避免生产环境的 frozen-lockfile 检查失败。
