@@ -34,13 +34,9 @@ draft: false
 
 入口为 `/admin`。支持文章搜索、Markdown 编辑和预览、图片上传、草稿保存、发布、删除；支持留言搜索、分页、隐藏与恢复、置顶、回复以及 JSON 导出。移动端也可使用。
 
-首次进入：
+使用服务端配置的账号和密码登录，无需在登录页创建密码或填写 GitHub 令牌。账号由 `ADMIN_USERNAME` 配置（默认 `admin`）；密码仅存储为 `ADMIN_PASSWORD_HASH`（scrypt 的 salt:digest），不写入前端或仓库。公开初始化接口已关闭。首次成功验证账号后，会自动初始化尚未设置密码的 Twikoo 管理员身份；已有 Twikoo 管理员密码需与配置的登录密码一致。
 
-1. 在博客仓库所有者的 GitHub 账号内创建 fine-grained personal access token，只选择 `myblog` 仓库，并为 **Contents** 授予 **Read and write** 权限。
-2. 在后台页面内填写令牌，设置至少 12 位的管理员密码。初始化前会核对 GitHub 账号是否为仓库所有者。
-3. 密码沿用 Twikoo 管理员身份。如果已有 Twikoo 密码，直接登录，在“后台设置”中连接仓库。
-
-令牌仅通过服务端访问 GitHub，不写入页面、localStorage 或仓库。它保存在加密的 HttpOnly、SameSite Strict 登录 cookie 中，7 天过期；退出登录会删除 cookie。每次后台请求都向 Twikoo 重新验证管理员身份。更换 Twikoo 密码会使已有会话失效。登录限流按服务实例生效，并非跨实例全局限流。
+发布文章需配置服务端 `ADMIN_GITHUB_TOKEN`，或登录后在“后台设置”连接拥有仓库 Contents 读写权限的 GitHub 令牌。令牌仅通过服务端访问 GitHub，不写入页面或 localStorage；手动连接的令牌保存在加密 HttpOnly、SameSite Strict cookie 中，7 天过期。每次后台请求都会重新验证 Twikoo 管理员身份。登录限流按服务实例生效。
 
 生产环境建议配置独立的 `ADMIN_SESSION_SECRET`（随机生成至少 32 字符）。已有部署未配置时，会从现有 `POSTGRES_URL` 派生独立会话加密密钥；更换该连接串会使已有后台会话失效。可选配置 `ADMIN_GITHUB_TOKEN`，免去每次登录重新连接仓库。仓库和分支可通过 `ADMIN_GITHUB_REPO`、`ADMIN_GITHUB_BRANCH` 覆盖，默认 `qixiao00/myblog`、`master`。配置示例见 `.env.example`。
 
@@ -48,7 +44,7 @@ draft: false
 
 **草稿不出现在博客页面，但仍会写入 Git 仓库。如果仓库公开，草稿也能在 GitHub 查看，不能用于保存私密内容。** 删除文章可从 Git 历史恢复；留言永久删除不可撤销，建议先导出或使用“隐藏”。留言继续位于现有 Twikoo MongoDB，本后台不迁移数据库。回复沿用现有 Twikoo 反垃圾及验证码设置；如果开启验证码，需要在 Twikoo 原管理面板中完成对应验证后回复。
 
-运行 `npm run test:admin` 验证会话防篡改、跨站保护、初始化身份验证、文章冲突与预览清理。测试使用模拟接口，不写入线上文章或留言。
+运行 `npm run test:admin` 验证会话防篡改、跨站保护、账号验证及禁止公开初始化、文章冲突与预览清理。测试使用模拟接口，不写入线上文章或留言。
 
 ## 评论服务
 

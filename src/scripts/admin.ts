@@ -4,13 +4,13 @@ type Comment = { _id: string; nick?: string; comment?: string; url?: string; cre
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const field = (id: string) => el<HTMLInputElement>(id);
 const value = (id: string) => field(id).value;
-let setup = false, connected = false, posts: Post[] = [], filter = 'all', view = 'posts', current: Post | null = null, dirty = false, saving = false, page = 1, commentCount = 0, reply: Comment | null = null;
+let connected = false, posts: Post[] = [], filter = 'all', view = 'posts', current: Post | null = null, dirty = false, saving = false, page = 1, commentCount = 0, reply: Comment | null = null;
 let previewVersion = 0, previewTimer: ReturnType<typeof setTimeout>, noticeTimer: ReturnType<typeof setTimeout>;
 function notice(message: string) { el('notice').textContent = message; el('notice').hidden = false; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => el('notice').hidden = true, 6000); }
 async function api<T = any>(route: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch(`/api/admin/${route}`, { method, credentials: 'same-origin', headers: body instanceof FormData ? {} : { 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }) });
   const data = await response.json();
-  if (!response.ok) { if (response.status === 401 && !['login', 'setup'].includes(route)) { el('admin-view').hidden = true; el('login-view').hidden = false; } throw new Error(data.message || '操作失败，请稍后重试。'); }
+  if (!response.ok) { if (response.status === 401 && route !== 'login') { el('admin-view').hidden = true; el('login-view').hidden = false; } throw new Error(data.message || '操作失败，请稍后重试。'); }
   return data as T;
 }
 async function busy(button: HTMLButtonElement, work: () => Promise<void>) { if (button.disabled) return; button.disabled = true; try { await work(); } catch (error) { notice(error instanceof Error ? error.message : '操作失败。'); } finally { button.disabled = false; } }
@@ -30,20 +30,18 @@ function switchView(next: string, force = false) {
 async function bootstrap() {
   el('retry-bootstrap').hidden = true;
   try {
-    const state = await api<{ passwordSet: boolean; owner: string }>('bootstrap'); setup = !state.passwordSet;
-    el('login-title').textContent = setup ? '开启你的编辑室' : '进入编辑室';
-    el('login-description').textContent = setup ? `使用 ${state.owner} 的 GitHub 凭据验证身份，然后设置管理员密码。` : '使用 Twikoo 管理员密码登录。';
-    el('confirm-label').hidden = !setup; el('setup-help').hidden = !setup; el('token-optional').hidden = setup;
-    field('login-password').disabled = false; field('login-password').minLength = setup ? 12 : 1; field('login-password').autocomplete = setup ? 'new-password' : 'current-password';
-    field('login-confirm').required = setup; field('login-github').disabled = false; field('login-github').required = setup;
-    el<HTMLButtonElement>('login-submit').disabled = false; el('login-submit').textContent = setup ? '验证身份并开启' : '登录';
+    const state = await api<{ configured: boolean }>('bootstrap');
+    if (!state.configured) throw new Error('后台账号尚未配置，请联系站点管理员。');
+    el('login-description').textContent = '输入账号和密码，管理文章与留言。';
+    field('login-username').disabled = false; field('login-password').disabled = false;
+    el<HTMLButtonElement>('login-submit').disabled = false; el('login-submit').textContent = '登录';
     const response = await fetch('/api/admin/session', { credentials: 'same-origin' });
     if (response.ok) { const session = await response.json(); await enter(session); }
   } catch (error) { el('login-description').textContent = error instanceof Error ? error.message : '无法连接后台。'; el('retry-bootstrap').hidden = false; }
 }
 async function enter(session?: { connected: boolean; repository: string }) {
   const state = session || await api<{ connected: boolean; repository: string }>('session'); connected = state.connected;
-  el('login-view').hidden = true; el('admin-view').hidden = false; field('login-password').value = ''; field('login-confirm').value = ''; field('login-github').value = '';
+  el('login-view').hidden = true; el('admin-view').hidden = false; field('login-password').value = '';
   el('connection-status').textContent = `${state.repository} · ${connected ? '已连接，可以编辑与发布。' : '尚未连接。留言管理已可使用。'}`;
   el('repo-prompt').hidden = connected; el<HTMLButtonElement>('new-post').disabled = !connected;
   if (dirty && current && view === 'editor') { switchView('editor', true); notice('登录已恢复，未保存的内容仍在编辑器中。'); void preview(); return; }
@@ -52,9 +50,9 @@ async function enter(session?: { connected: boolean; repository: string }) {
 el<HTMLFormElement>('login-form').addEventListener('submit', event => {
   event.preventDefault(); void busy(el<HTMLButtonElement>('login-submit'), async () => {
     el('login-error').hidden = true;
-    try { if (setup && value('login-password') !== value('login-confirm')) throw new Error('两次输入的密码不一致。');
-      await api(setup ? 'setup' : 'login', 'POST', { password: value('login-password'), ...(value('login-github').trim() ? { githubToken: value('login-github').trim() } : {}) });
-      setup = false; el('confirm-label').hidden = true; field('login-confirm').required = false; el('setup-help').hidden = true; el('token-optional').hidden = false; field('login-password').minLength = 1; field('login-github').required = false; el('login-title').textContent = '进入编辑室'; el('login-submit').textContent = '登录'; await enter();
+    try {
+      await api('login', 'POST', { username: value('login-username').trim(), password: value('login-password') });
+      await enter();
     } catch (error) { el('login-error').textContent = error instanceof Error ? error.message : '登录失败。'; el('login-error').hidden = false; }
   });
 });

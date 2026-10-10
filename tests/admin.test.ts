@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, scryptSync } from "node:crypto";
 import { AdminError, encodeSession, decodeSession, requireSameOrigin, readJson, SESSION_COOKIE } from "../src/lib/admin/security";
-import { safePostPath, savePost, verifyOwner } from "../src/lib/admin/posts";
+import { safePostPath, savePost } from "../src/lib/admin/posts";
 import { readFrontmatter } from "../src/lib/admin/frontmatter";
 import { previewMarkdown } from "../src/lib/admin/preview";
 import { loginPassword, listComments, changeComment, replyComment } from "../src/lib/admin/comments";
@@ -54,21 +54,25 @@ test("save refuses stale SHA without writing; preserves extra metadata", async (
   mockFetch((_url, body, method) => { if (method === "GET") return response({ sha: oldSha, content: Buffer.from("---\ntitle: old\ncustom: keep-me\n---\nold").toString("base64") }); writes++; stored = Buffer.from(body.content, "base64").toString(); return response({ content: { sha: newSha }, commit: { html_url: "https://github.com/test/commit" } }); });
   const saved = await savePost(session, article); assert.equal(saved.sha, newSha); assert.equal(writes, 1); const parsed = readFrontmatter(stored); assert.equal(parsed.data.custom, "keep-me"); assert.equal(parsed.data.draft, true); assert.ok(parsed.content.includes("# 正文"));
 });
-test("first setup rejects a non-owner before changing the provider password", async () => {
-  let changed = false; mockFetch((url, body) => { if (url.endsWith("/user")) return response({ login: "someone-else" }); if (body.event === "SET_PASSWORD") changed = true; throw new Error("Unexpected request"); });
-  await assert.rejects(verifyOwner("test"), /所有者/);
-  const ctx = context("setup", "POST", { password: "a-long-test-password", githubToken: "test" }); const result = await POST(ctx as any); assert.equal(result.status, 403); assert.equal(changed, false); assert.equal(ctx.jar.size, 0);
-});
-test("a server publishing token cannot stand in for the setup caller's identity", async () => {
-  process.env.ADMIN_GITHUB_TOKEN = "server-only-publishing-token";
+test("public setup cannot change the provider password", async () => {
   let requested = false; mockFetch(() => { requested = true; throw new Error("Unexpected request"); });
-  try { const result = await POST(context("setup", "POST", { password: "a-long-test-password" }) as any); assert.equal(result.status, 400); assert.equal(requested, false); }
-  finally { delete process.env.ADMIN_GITHUB_TOKEN; }
+  const result = await POST(context("setup", "POST", { password: "test-password", githubToken: "test" }) as any);
+  assert.equal(result.status, 404); assert.equal(requested, false);
 });
-test("owner initialization verifies both identities and creates an HttpOnly session", async () => {
+test("wrong account or password cannot reach Twikoo", async () => {
+  const salt = "1".repeat(32); process.env.ADMIN_PASSWORD_HASH = `${salt}:${scryptSync("test-password", salt, 64).toString("hex")}`;
+  let requested = false; mockFetch(() => { requested = true; throw new Error("Unexpected request"); });
+  for (const data of [{ username: "wrong", password: "test-password" }, { username: "admin", password: "wrong" }]) {
+    const ctx = context("login", "POST", data); assert.equal((await POST(ctx as any)).status, 401); assert.equal(ctx.jar.size, 0);
+  }
+  assert.equal(requested, false);
+});
+test("account login initializes Twikoo only after verification and creates an HttpOnly session", async () => {
+  const salt = "1".repeat(32); process.env.ADMIN_PASSWORD_HASH = `${salt}:${scryptSync("test-password", salt, 64).toString("hex")}`;
   let changed = false;
-  mockFetch((url, body) => { if (url.endsWith("/user")) return response({ login: "qixiao00" }); if (url.includes("api.github.com/repos/")) return response({ permissions: { push: true } }); if (body.event === "GET_PASSWORD_STATUS") return response({ status: false }); if (body.event === "SET_PASSWORD") { changed = true; return response({ code: 0 }); } if (body.event === "LOGIN") return response({ code: 0 }); if (body.event === "GET_CONFIG") return response({ config: { IS_ADMIN: true } }); throw new Error("Unexpected request"); });
-  const ctx = context("setup", "POST", { password: "a-long-test-password", githubToken: "test-only-token" }); const result = await POST(ctx as any); assert.equal(result.status, 200); assert.ok(changed); assert.equal(ctx.options[0].httpOnly, true); assert.equal(ctx.options[0].sameSite, "strict"); assert.equal(decodeSession(ctx.jar.get(SESSION_COOKIE))?.githubToken, "test-only-token");
+  mockFetch((_url, body) => { if (body.event === "GET_PASSWORD_STATUS") return response({ status: false }); if (body.event === "SET_PASSWORD") { changed = true; return response({ code: 0 }); } if (body.event === "LOGIN") return response({ code: 0 }); if (body.event === "GET_CONFIG") return response({ config: { IS_ADMIN: true } }); throw new Error("Unexpected request"); });
+  const ctx = context("login", "POST", { username: "admin", password: "test-password" }); const result = await POST(ctx as any);
+  assert.equal(result.status, 200); assert.ok(changed); assert.equal(ctx.options[0].httpOnly, true); assert.equal(ctx.options[0].sameSite, "strict"); assert.ok(decodeSession(ctx.jar.get(SESSION_COOKIE)));
 });
 test("protected APIs reject anonymous, expired and revoked identities", async () => {
   for (const cookie of [undefined, encodeSession({ ...session, expires: Date.now() - 1 })]) { const result = await GET(context("posts", "GET", undefined, cookie) as any); assert.equal(result.status, 401); }

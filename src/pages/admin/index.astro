@@ -29,10 +29,8 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
           <p class="eyebrow">欢迎回来</p>
           <h2 id="login-title">进入编辑室</h2>
           <p id="login-description" class="muted">正在检查后台状态…</p>
-          <label>管理员密码<input id="login-password" type="password" autocomplete="current-password" required maxlength="200" disabled /></label>
-          <label id="confirm-label" hidden>再次输入密码<input id="login-confirm" type="password" autocomplete="new-password" maxlength="200" /></label>
-          <label id="login-github-label">GitHub 访问令牌 <span id="token-optional" class="muted">（可选）</span><input id="login-github" type="password" autocomplete="off" maxlength="512" placeholder="只需为博客仓库授权" disabled /></label>
-          <p id="setup-help" class="form-help" hidden>首次初始化需验证仓库所有者身份。<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">创建 GitHub 令牌 ↗</a>，选择本博客仓库，赋予 <strong>Contents · Read and write</strong> 权限，然后设置至少 12 位的管理员密码。</p>
+          <label>账号<input id="login-username" type="text" autocomplete="username" required maxlength="100" disabled /></label>
+          <label>密码<input id="login-password" type="password" autocomplete="current-password" required maxlength="200" disabled /></label>
           <p id="login-error" class="form-error" role="alert" hidden></p>
           <button id="login-submit" class="button primary" type="submit" disabled>正在连接…</button>
           <p class="form-help">密码与 Twikoo 留言管理共用。登录后也可单独连接文章仓库。</p>

@@ -1,12 +1,12 @@
 import type { APIRoute, APIContext } from "astro";
 import { z } from "zod";
-import { AdminError, SESSION_COOKIE, checkLoginRate, decodeSession, encodeSession, env, readJson, requireSameOrigin, saveSession } from "../../../lib/admin/security";
+import { AdminError, SESSION_COOKIE, checkLoginRate, decodeSession, encodeSession, env, readJson, requireSameOrigin, saveSession, verifyCredentials } from "../../../lib/admin/security";
 import { changeComment, initializePassword, listComments, loginPassword, passwordStatus, replyComment, verifyAdmin } from "../../../lib/admin/comments";
 import { PostInput, deletePost, getImage, getPost, githubToken, listPosts, repository, savePost, uploadImage, verifyOwner } from "../../../lib/admin/posts";
 import { previewMarkdown } from "../../../lib/admin/preview";
 
 export const prerender = false;
-const credentials = z.object({ password: z.string().min(1).max(200), githubToken: z.string().trim().min(1).max(512).optional() });
+const credentials = z.object({ username: z.string().trim().min(1).max(100), password: z.string().min(1).max(200), githubToken: z.string().trim().min(1).max(512).optional() });
 const commentChange = z.object({ id: z.string().min(1).max(120), action: z.enum(["hide", "restore", "pin", "unpin", "delete"]) });
 
 function json(data: unknown, status = 200) {
@@ -19,27 +19,20 @@ const handler: APIRoute = async (context: APIContext) => {
   try {
     if (request.method !== "GET") requireSameOrigin(request);
     if (request.method === "GET" && action === "bootstrap") {
-      return json({ passwordSet: await passwordStatus(), owner: repository().owner });
+      return json({ configured: Boolean(env("ADMIN_PASSWORD_HASH")) });
     }
     if (request.method === "POST" && action === "logout") {
       cookies.delete(SESSION_COOKIE, { path: "/" });
       return json({ ok: true });
     }
-    if (request.method === "POST" && (action === "login" || action === "setup")) {
+    if (action === "setup") throw new AdminError(404, "后台接口不存在。");
+    if (request.method === "POST" && action === "login") {
       checkLoginRate(context.clientAddress || "unknown");
       const input = credentials.parse(await readJson(request, 4096));
-      // Check the encryption configuration before changing the provider password.
-      if (action === "setup") {
-        if (input.password.length < 12) throw new AdminError(400, "首次设置的密码至少需要 12 个字符。");
-        // A configured publishing token proves server access, never the caller's identity.
-        if (!input.githubToken) throw new AdminError(400, "首次初始化需要 GitHub 凭据验证仓库所有者身份。");
-        await verifyOwner(input.githubToken);
-      } else if (input.githubToken) {
-        await verifyOwner(input.githubToken);
-      }
-      // This never sets a cookie before the password has been verified.
+      verifyCredentials(input.username, input.password);
       encodeSession({ token: "0".repeat(32), expires: Date.now() + 1000 });
-      const token = action === "setup" ? await initializePassword(input.password) : await loginPassword(input.password);
+      const token = await passwordStatus() ? await loginPassword(input.password) : await initializePassword(input.password);
+      if (input.githubToken) await verifyOwner(input.githubToken);
       saveSession(cookies, { token, ...(input.githubToken ? { githubToken: input.githubToken } : {}) });
       return json({ ok: true });
     }

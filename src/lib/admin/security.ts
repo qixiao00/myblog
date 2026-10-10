@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { AstroCookies } from "astro";
 
 export class AdminError extends Error {
@@ -52,7 +52,14 @@ export function requireSameOrigin(request: Request) {
   if (!origin || origin !== new URL(request.url).origin) throw new AdminError(403, "请从本站后台提交操作。");
 }
 
-// A bounded guard in each server worker. Twikoo remains the password authority.
+export function verifyCredentials(username: string, password: string) {
+  const [salt, digest] = (env("ADMIN_PASSWORD_HASH") || "").split(":");
+  if (!/^[a-f0-9]{32}$/.test(salt || "") || !/^[a-f0-9]{128}$/.test(digest || "")) throw new AdminError(503, "后台账号尚未配置。");
+  const validPassword = timingSafeEqual(scryptSync(password, salt, 64), Buffer.from(digest, "hex"));
+  if (username !== (env("ADMIN_USERNAME") || "admin") || !validPassword) throw new AdminError(401, "账号或密码不正确。");
+}
+
+// A bounded guard in each server worker.
 const loginAttempts = new Map<string, { count: number; reset: number }>();
 export function checkLoginRate(address: string) {
   const now = Date.now();
