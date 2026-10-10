@@ -10,22 +10,28 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "export:twikoo": "node ./scripts/export-db-comments-to-twikoo.mjs"
+    "export:twikoo": "node ./scripts/export-db-comments-to-twikoo.mjs",
+    "test:admin": "tsx --test tests/admin.test.ts"
   },
   "dependencies": {
     "@astrojs/vercel": "^9.0.5",
     "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.1.4",
     "astro": "^5.7.11",
+    "marked": "^18.1.0",
     "postgres": "^3.4.9",
     "remark-gfm": "^4.0.1",
+    "sanitize-html": "^2.18.0",
     "tailwindcss": "^4.1.4",
     "unist-util-visit": "^5.0.0",
+    "yaml": "^2.9.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
     "@types/node": "^22.14.1",
+    "@types/sanitize-html": "^2.16.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.8.3"
   }
 }

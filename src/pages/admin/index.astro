@@ -1,0 +1,97 @@
+---
+import "../../styles/admin.css";
+export const prerender = false;
+Astro.response.headers.set("Cache-Control", "no-store");
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+Astro.response.headers.set("X-Frame-Options", "DENY");
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>编辑室 · 亓</title>
+  </head>
+  <body>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <section id="login-view" class="login-view">
+      <div class="login-intro">
+        <a href="/" class="wordmark">亓<span>EDITOR'S DESK</span></a>
+        <div class="login-copy"><p class="eyebrow">私人刊物 · 编辑室</p><h1>把生活<br />写成下一篇。</h1><p>写作、刊登，以及读者寄来的话。<br />在这里，慢慢整理。</p></div>
+        <a href="/" class="quiet-link">← 回到博客</a>
+      </div>
+      <div class="login-panel">
+        <form id="login-form" class="login-form">
+          <p class="eyebrow">欢迎回来</p>
+          <h2 id="login-title">进入编辑室</h2>
+          <p id="login-description" class="muted">正在检查后台状态…</p>
+          <label>管理员密码<input id="login-password" type="password" autocomplete="current-password" required maxlength="200" disabled /></label>
+          <label id="confirm-label" hidden>再次输入密码<input id="login-confirm" type="password" autocomplete="new-password" maxlength="200" /></label>
+          <label id="login-github-label">GitHub 访问令牌 <span id="token-optional" class="muted">（可选）</span><input id="login-github" type="password" autocomplete="off" maxlength="512" placeholder="只需为博客仓库授权" disabled /></label>
+          <p id="setup-help" class="form-help" hidden>首次初始化需验证仓库所有者身份。<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">创建 GitHub 令牌 ↗</a>，选择本博客仓库，赋予 <strong>Contents · Read and write</strong> 权限，然后设置至少 12 位的管理员密码。</p>
+          <p id="login-error" class="form-error" role="alert" hidden></p>
+          <button id="login-submit" class="button primary" type="submit" disabled>正在连接…</button>
+          <p class="form-help">密码与 Twikoo 留言管理共用。登录后也可单独连接文章仓库。</p>
+          <button id="retry-bootstrap" class="button" type="button" hidden>重新连接</button>
+        </form>
+      </div>
+    </section>
+
+    <div id="admin-view" class="admin-shell" hidden>
+      <aside class="admin-sidebar">
+        <a href="/admin" class="wordmark">亓<span>EDITOR'S DESK</span></a>
+        <div class="sidebar-caption">编辑室</div>
+        <nav aria-label="后台导航">
+          <button data-view="posts" class="nav-item active"><span aria-hidden="true">▤</span>文章</button>
+          <button data-view="comments" class="nav-item"><span aria-hidden="true">◌</span>读者留言</button>
+          <button data-view="settings" class="nav-item"><span aria-hidden="true">⚙</span>后台设置</button>
+        </nav>
+        <div class="sidebar-footer"><a href="/" target="_blank" rel="noopener noreferrer">查看博客 ↗</a><button id="logout" class="quiet-link">退出登录</button></div>
+      </aside>
+      <main class="admin-main">
+        <header class="workspace-header"><span>私人刊物 / <span id="breadcrumb">文章</span></span><span class="workspace-state"><i></i>编辑室已连接</span><button id="mobile-logout" class="quiet-link mobile-logout">退出登录</button></header>
+
+        <section id="posts-view" class="workspace-view">
+          <div class="section-heading"><div><p class="eyebrow">文章库</p><h1>留住写下的东西。</h1><p class="muted">编辑已有文章，或从一份草稿开始。</p></div><button id="new-post" class="button primary">＋ 写一篇</button></div>
+          <div id="repo-prompt" class="connection-prompt" hidden><div><strong>先连接你的文章仓库</strong><p>连接后即可读取历史文章、保存草稿与发布。</p></div><button id="open-settings" class="button">连接仓库 →</button></div>
+          <div class="list-toolbar"><div class="tabs" role="group" aria-label="文章状态"><button data-filter="all" class="active">全部 <span id="all-count">—</span></button><button data-filter="published">已发布 <span id="published-count">—</span></button><button data-filter="draft">草稿 <span id="draft-count">—</span></button></div><input id="post-search" type="search" placeholder="搜索标题、标签或路径" aria-label="搜索文章" /><button id="refresh-posts" class="button small">刷新</button></div>
+          <div id="posts-list" class="post-list" aria-live="polite"></div>
+        </section>
+
+        <section id="editor-view" class="workspace-view" hidden>
+          <div class="section-heading compact"><div><button id="back-posts" class="quiet-link">← 文章库</button><h1 id="editor-heading">写一篇</h1><p id="save-state" class="muted">开始写作。</p></div><div class="button-row"><button id="save-draft" class="button">保存草稿</button><button id="publish-post" class="button primary">发布文章</button></div></div>
+          <div class="editor-details">
+            <label class="title-field">标题<input id="post-title" type="text" placeholder="给这篇文章一个名字" maxlength="200" required /></label>
+            <div class="metadata-row"><label>文章路径<input id="post-path" type="text" placeholder="随笔/我的新文章.md" maxlength="220" /></label><label>发表日期<input id="post-date" type="date" required /></label><label>标签<input id="post-tags" type="text" placeholder="摄影，生活，随笔" /></label></div>
+            <label>简介<textarea id="post-description" rows="2" maxlength="240" placeholder="一句话介绍这篇文章（选填）"></textarea></label>
+          </div>
+          <div class="editor-toolbar"><div class="format-tools"><button data-format="bold" title="加粗" aria-label="插入加粗"><strong>B</strong></button><button data-format="italic" title="斜体" aria-label="插入斜体"><em>I</em></button><button data-format="heading" title="标题">H₂</button><button data-format="link" title="链接">链接</button><button id="upload-image" title="上传图片">＋ 图片</button><input id="image-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden /></div><div class="tabs editor-modes" role="group" aria-label="编辑模式"><button data-mode="edit">编辑</button><button data-mode="split" class="active">对照</button><button data-mode="preview">预览</button></div></div>
+          <div id="editor-panes" class="editor-panes mode-split"><label class="sr-only" for="post-content">Markdown 正文</label><textarea id="post-content" class="markdown-editor" spellcheck="false" placeholder="从一个句子开始。支持 Markdown、图片和内部链接。"></textarea><div id="post-preview" class="markdown-preview" aria-label="文章预览"></div></div>
+          <footer class="editor-footer"><span id="word-count">0 字</span><span>草稿也会写入公开仓库 · Ctrl / ⌘ + S 保存 · 图片最大 4 MB</span></footer>
+        </section>
+
+        <section id="comments-view" class="workspace-view" hidden>
+          <div class="section-heading"><div><p class="eyebrow">读者来信</p><h1>有人在这里停留。</h1><p id="comments-summary" class="muted">管理留言板和文章下的评论与回复。</p></div><button id="export-comments" class="button">导出留言 ↓</button></div>
+          <form id="comment-search-form" class="list-toolbar"><input id="comment-search" type="search" placeholder="搜索留言内容、昵称或邮箱" aria-label="搜索留言" /><select id="comment-filter" aria-label="留言状态"><option value="all">全部留言</option><option value="visible">公开留言</option><option value="hidden">已隐藏</option></select><button class="button" type="submit">搜索</button></form>
+          <div id="comments-list" class="comment-list" aria-live="polite"></div>
+          <div class="pagination"><button id="comments-prev" class="button small">← 上一页</button><span id="comments-page"></span><button id="comments-next" class="button small">下一页 →</button></div>
+        </section>
+
+        <section id="settings-view" class="workspace-view" hidden>
+          <div class="section-heading"><div><p class="eyebrow">后台设置</p><h1>让写作顺畅一点。</h1></div></div>
+          <form id="connect-form" class="settings-card"><p class="eyebrow">文章发布</p><h2>连接博客仓库</h2><p id="connection-status" class="muted"></p><label>GitHub 访问令牌<input id="connect-token" type="password" autocomplete="off" maxlength="512" required placeholder="粘贴拥有仓库 Contents 写权限的令牌" /></label><p class="form-help"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">创建令牌 ↗</a>：选择博客仓库，将 Contents 设置为 Read and write。令牌保存在加密登录会话中，退出登录后需要重新连接。</p><button class="button primary" type="submit">验证并连接</button></form>
+          <div class="settings-card"><p class="eyebrow">发布与数据</p><h2>文章和留言各有归处</h2><dl class="settings-facts"><div><dt>文章与图片</dt><dd>保存在原有笔记库，支持继续使用 Obsidian。</dd></div><div><dt>发布生效</dt><dd>发布或更新后，等待站点部署完成即可在博客看到。草稿不展示在博客，但会写入公开仓库，请勿保存私密内容。</dd></div><div><dt>读者留言</dt><dd>继续保存在 Twikoo 的 MongoDB 数据库中。</dd></div><div><dt>登录有效期</dt><dd>7 天。修改 Twikoo 管理员密码后需重新登录。</dd></div></dl></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="reply-dialog"><form id="reply-form"><div class="dialog-heading"><h2>回复留言</h2><button id="close-reply" class="quiet-link" type="button" aria-label="关闭">✕</button></div><p id="reply-context" class="muted"></p><div class="metadata-row"><label>昵称<input id="reply-nick" type="text" value="亓" maxlength="50" required /></label><label>邮箱<input id="reply-mail" type="email" maxlength="254" required /></label></div><label>回复内容<textarea id="reply-content" rows="6" maxlength="5000" required placeholder="写下想回复的话…"></textarea></label><p class="form-help">使用 Twikoo 配置的博主邮箱，会显示博主标识。</p><button class="button primary" type="submit">发送回复</button></form></dialog>
+    <script>
+      import "../../scripts/admin";
+    </script>
+  </body>
+</html>
