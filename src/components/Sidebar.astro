@@ -13,7 +13,7 @@ const openFolders = getOpenFolderPaths(currentNotePath);
 ---
 
 <div class="sidebar-shell flex h-full flex-col gap-4 p-2 lg:p-0">
-  <div class="flex items-start justify-end lg:hidden">
+  <div class="directory-close flex items-start justify-end lg:hidden">
     <button
       type="button"
       data-sidebar-close
@@ -24,6 +24,7 @@ const openFolders = getOpenFolderPaths(currentNotePath);
     </button>
   </div>
 
+  <p class="directory-caption">我的笔记库</p>
   <nav class="min-h-0 flex-1 overflow-y-auto pr-1 lg:pt-1">
     {
       tree.length ? (

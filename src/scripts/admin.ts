@@ -7,12 +7,13 @@ const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElem
 const field = (id: string) => el<HTMLInputElement>(id);
 const value = (id: string) => field(id).value;
 let connected = false, canWrite = false, posts: Post[] = [], filter = 'all', view = 'posts', current: Post | null = null, dirty = false, saving = false, page = 1, commentCount = 0, reply: Comment | null = null;
+let commentDirection = 1;
 let previewVersion = 0, previewTimer: ReturnType<typeof setTimeout>, noticeTimer: ReturnType<typeof setTimeout>;
 function notice(message: string) { el('notice').textContent = message; el('notice').hidden = false; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => el('notice').hidden = true, 6000); }
 async function api<T = any>(route: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch(`/api/admin/${route}`, { method, credentials: 'same-origin', headers: body instanceof FormData ? {} : { 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }) });
   const data = await response.json();
-  if (!response.ok) { if (response.status === 401 && route !== 'login') { el('admin-view').hidden = true; el('login-view').hidden = false; } throw new Error(data.message || '操作失败，请稍后重试。'); }
+  if (!response.ok) { if (response.status === 401 && route !== 'login') { el('admin-view').hidden = true; el('login-view').hidden = false; document.querySelector<HTMLElement>('.login-theme')!.hidden = false; } throw new Error(data.message || '操作失败，请稍后重试。'); }
   return data as T;
 }
 async function busy(button: HTMLButtonElement, work: () => Promise<void>) { if (button.disabled) return; button.disabled = true; try { await work(); } catch (error) { notice(error instanceof Error ? error.message : '操作失败。'); } finally { button.disabled = false; } }
@@ -22,9 +23,11 @@ function empty(target: string, message: string) { el(target).replaceChildren(tex
 function canLeave() { if (saving) { notice('正在保存，请稍候。'); return false; } return !dirty || confirm('还有未保存的修改，确定离开吗？'); }
 function switchView(next: string, force = false) {
   if (view === 'editor' && next !== 'editor' && !force && !canLeave()) return;
+  const oldView = view;
   if (next !== 'editor') { dirty = false; previewVersion++; }
   view = next;
   for (const name of ['posts', 'editor', 'comments', 'stats', 'settings']) el(`${name}-view`).hidden = name !== next;
+  if (oldView !== next && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) el(`${next}-view`).animate([{ opacity: 0, transform: 'translateY(18px) scale(.99)' }, { opacity: 1, transform: 'none' }], { duration: 480, easing: 'cubic-bezier(.22,1,.36,1)' });
   document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(node => node.classList.toggle('active', node.dataset.view === next || next === 'editor' && node.dataset.view === 'posts'));
   el('breadcrumb').textContent = { posts: '文章', editor: '写作', comments: '读者留言', stats: '访问统计', settings: '后台设置' }[next] || '';
   if (next === 'stats') void loadStats().catch(error => notice(error.message));
@@ -44,7 +47,7 @@ async function bootstrap() {
 }
 async function enter(session?: { connected: boolean; canWrite: boolean; writeError: string; repository: string }) {
   const state = session || await api<{ connected: boolean; canWrite: boolean; writeError: string; repository: string }>('session'); connected = state.connected; canWrite = state.canWrite;
-  el('login-view').hidden = true; el('admin-view').hidden = false; field('login-password').value = '';
+  el('login-view').hidden = true; document.querySelector<HTMLElement>('.login-theme')!.hidden = true; el('admin-view').hidden = false; field('login-password').value = '';
   el('connection-status').textContent = `${state.repository} · ${canWrite ? '已验证写入权限，可以编辑与发布。' : connected ? '可读取文章，写入权限尚未通过。' : '尚未连接。留言管理已可使用。'}`;
   el('repo-prompt').hidden = canWrite; el('repo-message').textContent = state.writeError || '连接拥有 Contents 写权限的令牌后即可保存与发布。'; el<HTMLButtonElement>('new-post').disabled = !connected;
   if (dirty && current && view === 'editor') { switchView('editor', true); notice('登录已恢复，未保存的内容仍在编辑器中。'); void preview(); return; }
@@ -153,7 +156,7 @@ async function loadStats() {
 el('refresh-stats').addEventListener('click', () => void busy(el<HTMLButtonElement>('refresh-stats'), loadStats));
 function plain(html: string) { return new DOMParser().parseFromString(html, 'text/html').body.textContent || ''; }
 async function loadComments() {
-  empty('comments-list', '正在读取留言…'); el<HTMLButtonElement>('comments-prev').disabled = true; el<HTMLButtonElement>('comments-next').disabled = true;
+  if (!el('comments-list').querySelector('.comment-card')) empty('comments-list', '正在读取留言…'); el('comments-list').setAttribute('aria-busy', 'true'); el<HTMLButtonElement>('comments-prev').disabled = true; el<HTMLButtonElement>('comments-next').disabled = true;
   try {
     const result = await api<{ count: number; data: Comment[] }>(`comments?page=${page}&type=${encodeURIComponent(value('comment-filter'))}&keyword=${encodeURIComponent(value('comment-search').trim())}`); commentCount = result.count;
     if (page > 1 && !result.data.length && page > Math.ceil(commentCount / 20)) { page = Math.max(1, Math.ceil(commentCount / 20)); return loadComments(); }
@@ -171,11 +174,12 @@ async function loadComments() {
       else location.textContent = source.label;
       card.append(heading, text('p', plain(comment.comment || ''), 'comment-body'), location, actions); el('comments-list').append(card);
     }
-  } catch (error) { empty('comments-list', error instanceof Error ? error.message : '留言加载失败。'); throw error; }
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) el('comments-list').animate([{ opacity: 0, transform: `translateX(${commentDirection * 18}px)` }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' });
+  } catch (error) { empty('comments-list', error instanceof Error ? error.message : '留言加载失败。'); throw error; } finally { el('comments-list').setAttribute('aria-busy', 'false'); }
 }
 el<HTMLFormElement>('comment-search-form').addEventListener('submit', event => { event.preventDefault(); page = 1; void loadComments().catch(error => notice(error.message)); });
-el('comments-prev').addEventListener('click', () => { if (page > 1) { page--; void loadComments().catch(error => notice(error.message)); } });
-el('comments-next').addEventListener('click', () => { if (page * 20 < commentCount) { page++; void loadComments().catch(error => notice(error.message)); } });
+el('comments-prev').addEventListener('click', () => { if (page > 1) { commentDirection = -1; page--; void loadComments().catch(error => notice(error.message)); } });
+el('comments-next').addEventListener('click', () => { if (page * 20 < commentCount) { commentDirection = 1; page++; void loadComments().catch(error => notice(error.message)); } });
 el('close-reply').addEventListener('click', () => el<HTMLDialogElement>('reply-dialog').close());
 el<HTMLFormElement>('reply-form').addEventListener('submit', event => { event.preventDefault(); void busy(el<HTMLFormElement>('reply-form').querySelector('button[type="submit"]')!, async () => { if (!reply) return; await api('reply', 'POST', { id: reply._id, parentId: reply.pid || undefined, url: reply.url, nick: value('reply-nick'), mail: value('reply-mail'), content: value('reply-content') }); el<HTMLDialogElement>('reply-dialog').close(); await loadComments(); notice('回复已发送。'); }); });
 el('export-comments').addEventListener('click', () => void busy(el<HTMLButtonElement>('export-comments'), async () => { const data = await api('export-comments'); const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = `comments-${new Date().toISOString().slice(0, 10)}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); notice('留言已导出。'); }));

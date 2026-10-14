@@ -30,99 +30,22 @@ const pageTitle = title === SITE.title ? title : `${title} | ${SITE.title}`;
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=3" />
     <link rel="apple-touch-icon" href="/favicon.svg?v=3" />
     <title>{pageTitle}</title>
+    <script is:inline>try{const direction=sessionStorage.getItem('journal-navigation-direction');if(direction==='forward'||direction==='back')document.documentElement.dataset.navigationDirection=direction;sessionStorage.removeItem('journal-navigation-direction');const theme=localStorage.getItem('journal-theme');if(theme==='light'||theme==='dark')document.documentElement.dataset.theme=theme}catch{}</script>
   </head>
   <body class="antialiased">
-    <div class="pointer-events-none fixed inset-0 overflow-hidden">
-      <div class="absolute -left-20 top-0 h-72 w-72 rounded-full bg-[var(--accent)]/8 blur-3xl"></div>
-      <div class="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-slate-300/10 blur-3xl"></div>
-    </div>
-
-    <header class="frost-header sticky top-0 z-30 border-b border-[var(--border)] backdrop-blur-xl">
-      <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-6">
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            data-sidebar-toggle
-            class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] px-4 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] lg:hidden"
-          >
-            目录
-          </button>
-          <a href="/" class="inline-flex items-center gap-2 text-sm uppercase tracking-[0.22em] text-[var(--muted)]">
-            <img src="/images/site-bg.jpg" alt="site logo" class="h-7 w-7 shrink-0 rounded-full border border-[var(--border)] object-cover aspect-square" />
-            <span>{SITE.title}</span>
-          </a>
-        </div>
-
-        <nav class="flex items-center gap-2">
-          <a
-            href="/guestbook"
-            class="inline-flex items-center rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--soft)]"
-          >
-            留言板
-          </a>
-          <a
-            href="/notes"
-            class="inline-flex items-center rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--soft)]"
-          >
-            全部笔记
-          </a>
-        </nav>
-      </div>
+    <header class="blog-header glass-material">
+      <a href="/" class="blog-brand"><strong>{SITE.title}</strong><span>文字 · 生活 · 看见</span></a>
+      <nav aria-label="网站导航">
+        {[{ href: "/", label: "首页" }, { href: "/notes", label: "笔记" }, { href: "/guestbook", label: "留言" }, { href: "/stats", label: "统计" }].map(item => <a href={item.href} aria-current={(item.href === "/" ? Astro.url.pathname === "/" : Astro.url.pathname.startsWith(item.href)) ? "page" : undefined}>{item.label}</a>)}
+      </nav>
+      <div class="blog-tools"><button class="glass-control blog-menu" type="button" data-sidebar-toggle aria-label="打开文章目录" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button><button class="glass-control glass-theme-button" type="button" data-theme-toggle aria-label="切换明暗主题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" /></svg></button></div>
     </header>
-
-    <div class="relative mx-auto flex w-full max-w-[1840px] gap-6 px-4 py-6 lg:px-6">
-      <div data-sidebar-backdrop class="fixed inset-0 z-30 hidden bg-slate-950/45 lg:hidden"></div>
-
-      <aside
-        data-sidebar-panel
-        class="fixed inset-y-0 left-0 z-40 w-[min(86vw,22rem)] -translate-x-full px-4 py-4 transition-transform duration-200 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:w-64 lg:translate-x-0 lg:px-0 lg:py-0"
-      >
-        <Sidebar tree={tree} currentNotePath={currentNotePath} />
-      </aside>
-
-      <main class="min-w-0 flex-1 lg:pl-1">
-        <div class="mx-auto w-full max-w-[72rem] px-3 py-2 sm:px-5 sm:py-4 lg:px-8 lg:py-6">
-          <slot />
-        </div>
-      </main>
-
-      <aside class="hidden lg:block lg:w-80 lg:shrink-0">
-        <slot name="right" />
-      </aside>
+    <div class="blog-frame">
+      <div data-sidebar-backdrop class="directory-backdrop hidden"></div>
+      <aside data-sidebar-panel class="blog-directory"><Sidebar tree={tree} currentNotePath={currentNotePath} /></aside>
+      <main class="blog-main"><slot /><footer class="blog-footer"><span>阿亓 · 请随意看看</span><a href="mailto:ikkym541@gmail.com">联系我 ↗</a><a href="/admin">编辑室 ↗</a></footer></main>
     </div>
-
-    <script is:inline>
-      const sidebarPanel = document.querySelector("[data-sidebar-panel]");
-      const sidebarBackdrop = document.querySelector("[data-sidebar-backdrop]");
-
-      const openSidebar = () => {
-        sidebarPanel?.classList.remove("-translate-x-full");
-        sidebarBackdrop?.classList.remove("hidden");
-        document.body.classList.add("overflow-hidden");
-      };
-
-      const closeSidebar = () => {
-        sidebarPanel?.classList.add("-translate-x-full");
-        sidebarBackdrop?.classList.add("hidden");
-        document.body.classList.remove("overflow-hidden");
-      };
-
-      document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
-        button.addEventListener("click", openSidebar);
-      });
-
-      document.querySelectorAll("[data-sidebar-close]").forEach((button) => {
-        button.addEventListener("click", closeSidebar);
-      });
-
-      sidebarBackdrop?.addEventListener("click", closeSidebar);
-
-      window.addEventListener("resize", () => {
-        if (window.innerWidth >= 1024) {
-          closeSidebar();
-        }
-      });
-    </script>
+    <script>import "../scripts/liquid-glass";</script>
     <script>import "../scripts/site-views";</script>
   </body>
 </html>

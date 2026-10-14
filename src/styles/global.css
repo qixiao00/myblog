@@ -1,94 +1,8 @@
-@import url("https://cdn.staticfile.net/lxgw-wenkai-screen-webfont/1.7.0/lxgwwenkaiscreen.css");
-@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap");
-
 @import "tailwindcss";
+@import "./liquid-glass.css";
+@import "./blog-glass.css";
 @plugin "@tailwindcss/typography";
-
-@font-face {
-  font-family: "Smiley Sans Local";
-  src: url("/fonts/SmileySans-Oblique.ttf.woff2") format("woff2");
-  font-display: swap;
-}
-
-:root {
-  color-scheme: light;
-  --bg: #f6f8fb;
-  --panel: rgba(255, 255, 255, 0.84);
-  --panel-strong: rgba(255, 255, 255, 0.94);
-  --soft: rgba(59, 130, 246, 0.09);
-  --border: rgba(15, 23, 42, 0.12);
-  --foreground: #0f172a;
-  --muted: #4b5563;
-  --accent: #2563eb;
-  --accent-strong: #1e40af;
-  --code-bg: #eef2ff;
-  --shadow: 0 24px 80px rgba(15, 23, 42, 0.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --bg: #121519;
-    --panel: rgba(23, 27, 33, 0.84);
-    --panel-strong: rgba(17, 21, 26, 0.95);
-    --soft: rgba(102, 157, 214, 0.14);
-    --border: rgba(148, 163, 184, 0.18);
-    --foreground: #f5efe5;
-    --muted: #bcaf9e;
-    --accent: #ee9b5f;
-    --accent-strong: #ffd0a8;
-    --code-bg: #1b2128;
-    --shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
-  }
-}
-
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #121519;
-  --panel: rgba(23, 27, 33, 0.84);
-  --panel-strong: rgba(17, 21, 26, 0.95);
-  --soft: rgba(102, 157, 214, 0.14);
-  --border: rgba(148, 163, 184, 0.18);
-  --foreground: #f5efe5;
-  --muted: #bcaf9e;
-  --accent: #ee9b5f;
-  --accent-strong: #ffd0a8;
-  --code-bg: #1b2128;
-  --shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
-}
-
-html {
-  background: var(--bg);
-}
-
-body {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 14%, transparent), transparent 30%),
-    radial-gradient(circle at bottom right, color-mix(in srgb, var(--soft) 85%, transparent), transparent 28%),
-    var(--bg);
-  color: var(--foreground);
-  font-family: "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
-  transition:
-    background-color 260ms ease,
-    color 220ms ease;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: "Smiley Sans Local", "Smiley Sans", "得意黑", "Noto Serif SC", "Source Han Serif SC", serif;
-  letter-spacing: 0.01em;
-  font-weight: 400;
-}
-
-::selection {
-  background: color-mix(in srgb, var(--accent) 25%, transparent);
-}
-
+@font-face{font-family:"Smiley Sans Local";src:url("/fonts/SmileySans-Oblique.ttf.woff2") format("woff2");font-display:swap}
 .note-prose img {
   display: block;
   max-width: 100%;
@@ -638,3 +552,5 @@ h1.hero-title {
     width: calc(100vw - 2rem) !important;
   }
 }
+
+.twikoo-shell .twikoo .tk-submit{border-radius:24px!important;background:var(--glass-surface)!important;box-shadow:var(--glass-shadow)!important}.twikoo-shell .twikoo .tk-main{background:transparent!important;border-radius:20px!important}.twikoo-shell .twikoo .tk-meta-input .el-input-group__prepend{border-radius:12px 0 0 12px!important}.twikoo-shell .twikoo .tk-meta-input .el-input__inner{border-radius:0 12px 12px 0!important}.twikoo-shell .twikoo .el-textarea__inner{border-radius:16px!important}

@@ -21,85 +21,18 @@ const recentNotes = getRecentNotes(notes, 6);
 ---
 
 <BaseLayout title={SITE.title} description={SITE.description} tree={tree}>
-  <section class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--soft)]/55 p-6 sm:p-8">
-    <h1 class="hero-title font-intro mt-1 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
-      你好啊，我是亓qí。
-    </h1>
-    <h1 class="hero-title font-intro mt-2 max-w-6xl text-4xl leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
-      我打算在这里写写关于我的东西。
-    </h1>
-
-    <div class="mt-6 max-w-6xl space-y-5 text-base leading-8 text-[var(--muted)]">
-      <p>我的朋友们总给我带来难以言说的感觉，以至于需要把我对他们的感受和回忆写下来才行，所以就有了「友人帐」。</p>
-      <p>「心情」部分是当我有一些情绪时想写的话，其实是情绪化时的产物。</p>
-      <p>「图文」我想放一些图片上来，我想尽可能地把每一个章节做成一个摄影集一样的东西。</p>
-      <p>如果你想联系到我请通过邮箱 ikkym541@gmail.com</p>
-      <p>祝你开心！</p>
-    </div>
-
-    <div class="mt-7 flex flex-wrap gap-3">
-      <a
-        href="/notes"
-        class="inline-flex items-center rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-medium text-white transition hover:opacity-90"
-      >
-        浏览全部笔记
-      </a>
-    </div>
+  <section class="journal-hero">
+    <img src="/images/site-bg.jpg" alt="街头阶梯上的行人，阳光从出口照进来" fetchpriority="high" width="1398" height="960" />
+    <div class="hero-copy"><p class="hero-eyebrow">你好啊，我是亓 qí。</p><h1>把日常，<br />留在这里。</h1><p>写一些心情，记一些朋友。<br />也留下那些被照片记住的瞬间。</p><div class="hero-actions"><a href="/notes" class="glass-control primary">翻开笔记 <span class="hero-arrow">↗</span></a><a href="/guestbook" class="glass-control">给我留言</a></div></div>
+    <div class="hero-caption">我的生活，在字里行间。</div>
   </section>
-
-  <section class="mt-8 lg:hidden">
-    <div class="surface-panel rounded-[1.5rem] p-5">
-      <RecentGuestbook />
-    </div>
+  <section class="journal-intro" aria-label="关于我的笔记">
+    <article class="glass-material" data-reveal><span class="journal-kicker">写下那些情绪</span><h2>心情</h2><p>有一些情绪时想写的话。<br />让一时的心绪，有个落脚的地方。</p></article>
+    <article class="glass-material" data-reveal><span class="journal-kicker">记住身边的人</span><h2>友人帐</h2><p>朋友总带来难以言说的感觉。<br />把关于他们的感受和回忆写下来。</p></article>
   </section>
-
-  <section class="mt-8 rounded-[1.75rem] border border-[var(--border)]/70 bg-[var(--bg)]/35 p-6 sm:p-8">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h2 class="mt-1 text-4xl font-semibold tracking-tight text-[var(--foreground)]">最近更新</h2>
-      </div>
-      <a
-        href="/notes"
-        class="inline-flex items-center rounded-full border border-[var(--border)]/80 px-4 py-2 text-sm text-[var(--accent)] transition hover:border-[var(--accent)]/50 hover:bg-[var(--soft)]"
-      >
-        查看全部 ->
-      </a>
-    </div>
-
-    {
-      recentNotes.length ? (
-        <div class="mt-7 divide-y divide-[var(--border)]/60">
-          {recentNotes.map((note) => (
-            <a
-              href={noteUrlFromId(note.id)}
-              class="group grid gap-3 py-5 transition md:grid-cols-[1fr_auto] md:items-start"
-            >
-              <div>
-                <h3 class="text-2xl font-semibold leading-[1.35] tracking-normal text-[var(--foreground)] transition group-hover:text-[var(--accent)] [font-family:'Source_Han_Serif_SC','Noto_Serif_SC','Songti_SC','STSong','SimSun',serif]">
-                  {getNoteTitle(note)}
-                </h3>
-                <span class="mt-2 inline-flex rounded-full border border-[var(--border)]/70 px-2.5 py-0.5 text-xs leading-none text-[var(--muted)]">
-                  来自 {getNoteFolderLabel(note.id)}
-                </span>
-                {note.data.description && (
-                  <p class="mt-2 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-                    {note.data.description}
-                  </p>
-                )}
-              </div>
-              <time class="pt-1 text-base leading-[1.35] text-[var(--muted)]/85 md:text-right">
-                {formatLongDate(note.data.date)}
-              </time>
-            </a>
-          ))}
-        </div>
-      ) : (
-        <p class="mt-6 text-sm text-[var(--muted)]">还没有公开笔记。</p>
-      )
-    }
+  <section data-reveal>
+    <div class="journal-section-heading"><div><span class="journal-kicker">最近写下的东西</span><h2>日子在更新。</h2></div><a href="/notes" class="glass-control">全部笔记 <span class="hero-arrow">↗</span></a></div>
+    <div class="journal-columns"><div class="journal-list">{recentNotes.length ? recentNotes.map(note => <a href={noteUrlFromId(note.id)} class="journal-note glass-material glass-interactive"><div><h3>{getNoteTitle(note)}</h3><p>{getNoteFolderLabel(note.id)} · {formatLongDate(note.data.date)}</p>{note.data.description && <p>{note.data.description}</p>}</div><span class="journal-note-arrow" aria-hidden="true">↗</span></a>) : <p>还没有公开笔记。</p>}</div><aside class="journal-letters glass-material"><RecentGuestbook compact limit={4} /></aside></div>
   </section>
-
-  <aside slot="right" class="surface-panel sticky top-24 rounded-[1.5rem] p-5">
-    <RecentGuestbook compact />
-  </aside>
+  <div class="journal-contact" data-reveal><p>关于照片、文字，或者只是打个招呼。<br /><a href="mailto:ikkym541@gmail.com">ikkym541@gmail.com ↗</a></p><p>祝你开心。</p></div>
 </BaseLayout>
