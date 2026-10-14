@@ -1,6 +1,6 @@
 import { readFrontmatter, writeFrontmatter } from "./frontmatter";
 import { newPostPath, POST_CATEGORIES } from "./post-path";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { z } from "zod";
 import { AdminError, env, type AdminSession } from "./security";
 
@@ -139,14 +139,16 @@ async function movePost(session: AdminSession, input: z.infer<typeof PostInput>,
     viewSlug: oldData.viewSlug || oldSlug, commentPath: oldData.commentPath || `/notes/${oldSlug.split("/").map(encodeURIComponent).join("/")}`, sourcePath: oldData.sourcePath || input.path,
   });
   // One tree/commit moves the article atomically; a concurrent branch update rejects the final ref update.
-  const nextTree = await github<{ sha: string; tree: Array<{ path: string; sha: string }> }>(`/repos/${repo.name}/git/trees`, token, "POST", { base_tree: commit.tree.sha, tree: [
+  const nextTree = await github<{ sha: string }>(`/repos/${repo.name}/git/trees`, token, "POST", { base_tree: commit.tree.sha, tree: [
     { path: oldPath, mode: "100644", type: "blob", sha: null }, { path: nextPath, mode: "100644", type: "blob", content: text },
   ] });
   const nextCommit = await github<{ sha: string; html_url: string }>(`/repos/${repo.name}/git/commits`, token, "POST", { message: `move: ${input.title} → ${input.category}`, tree: nextTree.sha, parents: [head.object.sha] });
   await github(`/repos/${repo.name}/git/refs/heads/${encodeURIComponent(repo.branch)}`, token, "PATCH", { sha: nextCommit.sha, force: false });
-  const blob = nextTree.tree.find(file => file.path === nextPath);
-  if (!blob) throw new AdminError(502, "文章已移动，请刷新文章列表。");
-  return { path: destination, sha: blob.sha, commitUrl: nextCommit.html_url };
+  // The tree response contains directory nodes, not necessarily nested file entries.
+  // Git hashes the exact UTF-8 blob bytes with this header.
+  const blob = Buffer.from(text, "utf8");
+  const blobSha = createHash("sha1").update(`blob ${blob.length}\0`).update(blob).digest("hex");
+  return { path: destination, sha: blobSha, commitUrl: nextCommit.html_url };
 }
 
 export async function savePost(session: AdminSession, input: z.infer<typeof PostInput>) {

@@ -165,7 +165,7 @@ test("site counters normalize public URLs and exclude APIs, admin, and unsafe pa
 
 test("category changes move a file in one commit and retain comments, views, redirects and metadata", async () => {
   const originalSha = "1".repeat(40), headSha = "2".repeat(40), baseTree = "3".repeat(40), newTree = "4".repeat(40), newBlob = "5".repeat(40), nextCommit = "6".repeat(40);
-  const operations: string[] = []; let movedData: any;
+  const operations: string[] = []; let movedData: any, expectedBlob = "";
   mockFetch((url, body, method) => {
     operations.push(method + " " + url);
     if (url.includes("/git/ref/heads/")) return response({ object: { sha: headSha } });
@@ -174,14 +174,16 @@ test("category changes move a file in one commit and retain comments, views, red
     if (url.includes("/contents/")) return response({ content: Buffer.from("---\ncustom: keep\n---\nold").toString("base64"), sha: originalSha });
     if (method === "POST" && url.endsWith("/git/trees")) {
       assert.equal(body.base_tree, baseTree); assert.equal(body.tree[0].sha, null); assert.equal(body.tree[0].path, "vault/心情/猫.md"); assert.equal(body.tree[1].path, "vault/友人帐/猫.md");
-      movedData = readFrontmatter(body.tree[1].content); return response({ sha: newTree, tree: [{ path: "vault/友人帐/猫.md", sha: newBlob }] });
+      movedData = readFrontmatter(body.tree[1].content);
+      const bytes = Buffer.from(body.tree[1].content, "utf8"); expectedBlob = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+      return response({ sha: newTree, tree: [{ path: "vault", type: "tree", sha: newBlob }] });
     }
     if (method === "POST" && url.endsWith("/git/commits")) { assert.deepEqual(body.parents, [headSha]); return response({ sha: nextCommit, html_url: "https://example.test/commit" }); }
     if (method === "PATCH") { assert.equal(body.force, false); assert.equal(body.sha, nextCommit); return response({ object: { sha: nextCommit } }); }
     throw new Error("Unexpected request");
   });
   const result = await savePost(session, { path: "心情/猫.md", sha: originalSha, category: "友人帐", title: "猫", date: "2026-10-14", description: "", tags: [], draft: false, content: "正文" });
-  assert.equal(result.path, "友人帐/猫.md"); assert.equal(result.sha, newBlob); assert.equal(movedData.data.custom, "keep");
+  assert.equal(result.path, "友人帐/猫.md"); assert.equal(result.sha, expectedBlob); assert.equal(movedData.data.custom, "keep");
   assert.equal(movedData.data.viewSlug, "心情/猫"); assert.equal(movedData.data.commentPath, "/notes/" + encodeURIComponent("心情") + "/" + encodeURIComponent("猫")); assert.deepEqual(movedData.data.redirectFrom, ["心情/猫"]); assert.equal(movedData.data.sourcePath, "心情/猫.md");
   assert.ok(operations.at(-1)?.startsWith("PATCH")); assert.equal(operations.filter(op => op.startsWith("PUT")).length, 0);
 });
