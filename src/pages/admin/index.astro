@@ -15,10 +15,8 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
     <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>编辑室 · 亓</title>
-    <script is:inline>try{const theme=localStorage.getItem('journal-theme');if(theme==='light'||theme==='dark')document.documentElement.dataset.theme=theme}catch{}</script>
   </head>
   <body>
-    <button type="button" class="glass-control glass-theme-button login-theme" data-theme-toggle aria-label="切换明暗主题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" /></svg></button>
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
     <section id="login-view" class="login-view">
       <div class="login-intro">
@@ -35,7 +33,7 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
           <label>密码<input id="login-password" type="password" autocomplete="current-password" required maxlength="200" disabled /></label>
           <p id="login-error" class="form-error" role="alert" hidden></p>
           <button id="login-submit" class="button primary" type="submit" disabled>正在连接…</button>
-          <p class="form-help">登录即可管理文章与留言，无需重复填写访问令牌。</p>
+          <p class="form-help">密码与 Twikoo 留言管理共用。登录后也可单独连接文章仓库。</p>
           <button id="retry-bootstrap" class="button" type="button" hidden>重新连接</button>
         </form>
       </div>
@@ -54,7 +52,7 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
         <div class="sidebar-footer"><a href="/" target="_blank" rel="noopener noreferrer">查看博客 ↗</a><button id="logout" class="quiet-link">退出登录</button></div>
       </aside>
       <main class="admin-main">
-        <header class="workspace-header"><span>私人刊物 / <span id="breadcrumb">文章</span></span><div class="workspace-header-actions"><span class="workspace-state"><i></i>编辑室已连接</span><button type="button" class="glass-control glass-theme-button" data-theme-toggle aria-label="切换明暗主题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" /></svg></button><button id="mobile-logout" class="quiet-link mobile-logout">退出登录</button></div></header>
+        <header class="workspace-header"><span>私人刊物 / <span id="breadcrumb">文章</span></span><span class="workspace-state"><i></i>编辑室已连接</span><button id="mobile-logout" class="quiet-link mobile-logout">退出登录</button></header>
 
         <section id="posts-view" class="workspace-view">
           <div class="section-heading"><div><p class="eyebrow">文章库</p><h1>留住写下的东西。</h1><p class="muted">编辑已有文章，或从一份草稿开始。</p></div><button id="new-post" class="button primary">＋ 写一篇</button></div>
@@ -99,7 +97,6 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
 
     <dialog id="reply-dialog"><form id="reply-form"><div class="dialog-heading"><h2>回复留言</h2><button id="close-reply" class="quiet-link" type="button" aria-label="关闭">✕</button></div><p id="reply-context" class="muted"></p><div class="metadata-row"><label>昵称<input id="reply-nick" type="text" value="亓" maxlength="50" required /></label><label>邮箱<input id="reply-mail" type="email" maxlength="254" required /></label></div><label>回复内容<textarea id="reply-content" rows="6" maxlength="5000" required placeholder="写下想回复的话…"></textarea></label><p class="form-help">使用 Twikoo 配置的博主邮箱，会显示博主标识。</p><button class="button primary" type="submit">发送回复</button></form></dialog>
     <script>
-      import "../../scripts/liquid-glass";
       import "../../scripts/admin";
     </script>
   </body>

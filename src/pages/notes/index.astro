@@ -19,18 +19,20 @@ const orderedNotes = getRecentNotes(notes, notes.length);
 ---
 
 <BaseLayout title="全部笔记" description="浏览所有公开笔记。" tree={tree}>
-  <section class="page-heading"><span class="journal-kicker">心情与友人帐</span><h1>全部笔记。</h1><p>一些情绪，一些朋友，一些想留下来的日子。</p></section>
+  <section>
+    <h1 class="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)]">全部笔记</h1>
+  </section>
 
-  <section class="mt-8 notes-grid">
+  <section class="mt-8 space-y-4">
     {
       orderedNotes.map((note) => (
         <a
           href={noteUrlFromId(note.id)}
-          data-reveal class="surface-panel glass-interactive block rounded-[1.5rem] p-5 transition hover:-translate-y-0.5"
+          class="surface-panel block rounded-[1.5rem] p-5 transition hover:-translate-y-0.5"
         >
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">{normalizeNoteId(note.id).split("/")[0]}</p>
+              <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">{normalizeNoteId(note.id)}</p>
               <h2 class="mt-2 text-xl font-semibold text-[var(--foreground)]">{getNoteTitle(note)}</h2>
             </div>
             <time class="pill">{formatLongDate(note.data.date)}</time>
