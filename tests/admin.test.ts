@@ -1,8 +1,11 @@
+import { siteViewKey } from "../src/lib/site-views";
+import { commentSource } from "../src/lib/admin/comment-source";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash, scryptSync } from "node:crypto";
 import { AdminError, encodeSession, decodeSession, requireSameOrigin, readJson, SESSION_COOKIE } from "../src/lib/admin/security";
-import { safePostPath, savePost } from "../src/lib/admin/posts";
+import { safePostPath, savePost, verifyOwner } from "../src/lib/admin/posts";
+import { newPostPath } from "../src/lib/admin/post-path";
 import { readFrontmatter } from "../src/lib/admin/frontmatter";
 import { previewMarkdown } from "../src/lib/admin/preview";
 import { loginPassword, listComments, changeComment, replyComment } from "../src/lib/admin/comments";
@@ -99,4 +102,62 @@ test("image upload validates bytes and commits to the attachment directory", asy
   const invalid = new FormData(); invalid.set("file", new File(["<script>bad()</script>"], "fake.png", { type: "image/png" }));
   ctx.request = new Request(ctx.url, { method: "POST", headers: { origin: ctx.url.origin }, body: invalid });
   const rejected = await POST(ctx as any); assert.equal(rejected.status, 400);
+});
+
+
+test("account push permission cannot substitute for token Contents write permission", async () => {
+  let probeBody: unknown;
+  mockFetch((url, body, method) => {
+    if (url.endsWith("/user")) return response({ login: "qixiao00" });
+    if (method === "PUT") { probeBody = body; return response({ message: "Resource not accessible by personal access token" }, 403); }
+    return response({ permissions: { push: true } });
+  });
+  await assert.rejects(verifyOwner("read-only-token"), /Contents/);
+  assert.deepEqual(probeBody, {});
+  const ctx = context("connect", "POST", { token: "read-only-token" }, encodeSession(session));
+  const originalCookie = ctx.jar.get(SESSION_COOKIE);
+  mockFetch((_url, body, method) => {
+    if (body.event === "GET_CONFIG") return response({ config: { IS_ADMIN: true } });
+    if (_url.endsWith("/user")) return response({ login: "qixiao00" });
+    return method === "PUT" ? response({}, 403) : response({ permissions: { push: true } });
+  });
+  assert.equal((await POST(ctx as any)).status, 403); assert.equal(ctx.jar.get(SESSION_COOKIE), originalCookie);
+});
+test("a write-capable token reaches validation without creating a commit", async () => {
+  mockFetch((url, body, method) => {
+    if (url.endsWith("/user")) return response({ login: "qixiao00" });
+    if (method === "PUT") { assert.deepEqual(body, {}); return response({ message: "Invalid request" }, 422); }
+    return response({ permissions: { push: true } });
+  });
+  assert.equal(await verifyOwner("write-token"), "qixiao00");
+});
+test("new article paths are generated from fixed categories and sanitized titles", async () => {
+  assert.equal(newPostPath("友人帐", "猫"), "友人帐/猫.md");
+  assert.equal(newPostPath("心情", "../春天/雨?"), "心情/-春天-雨-.md");
+  assert.throws(() => newPostPath("随笔", "标题")); assert.throws(() => newPostPath("心情", "..."));
+  let writeUrl = "";
+  mockFetch((url, _body, method) => { assert.equal(method, "PUT"); writeUrl = decodeURIComponent(url); return response({ content: { sha: "2".repeat(40) }, commit: { html_url: "https://example.test/commit" } }); });
+  const saved = await savePost(session, { path: "wrong/place.md", category: "友人帐", title: "猫", date: "2026-10-14", description: "", tags: [], draft: true, content: "正文" });
+  assert.equal(saved.path, "友人帐/猫.md"); assert.ok(writeUrl.endsWith("/vault/友人帐/猫.md"));
+});
+
+test("session reports a connected read-only token without claiming publishing is ready", async () => {
+  mockFetch((_url, body, method) => body.event === "GET_CONFIG" ? response({ config: { IS_ADMIN: true } }) : response({}, method === "PUT" ? 403 : 200));
+  const result = await GET(context("session", "GET", undefined, encodeSession(session)) as any);
+  assert.equal(result.status, 200); const state = await result.json(); assert.equal(state.connected, true); assert.equal(state.canWrite, false); assert.match(state.writeError, /Contents/);
+});
+
+test("comment sources show labels and never turn untrusted URLs into links", () => {
+  assert.deepEqual(commentSource("/guestbook/"), { label: "留言板", href: "/guestbook" });
+  const url = "/notes/" + encodeURIComponent("心情") + "/" + encodeURIComponent("闹钟是八点十分");
+  assert.equal(commentSource(url).label, "闹钟是八点十分");
+  assert.equal(commentSource(url, [{ path: "心情/闹钟是八点十分.md", title: "真正的文章标题" }]).label, "真正的文章标题");
+  assert.equal(commentSource("javascript:alert(1)").href, "");
+  assert.equal(commentSource("/notes/../admin").href, "");
+});
+test("site counters normalize public URLs and exclude APIs, admin, and unsafe paths", () => {
+  assert.equal(siteViewKey("/?utm_source=test"), "@site:/");
+  assert.equal(siteViewKey("/guestbook/"), "@site:/guestbook");
+  assert.equal(siteViewKey("/notes/%E5%BF%83%E6%83%85/%E9%9B%AA"), "@site:/notes/心情/雪");
+  for (const page of ["/admin", "/api/admin/stats", "//evil.example", "/notes/../admin", "/notes/%zz", "/notes/%00"]) assert.throws(() => siteViewKey(page));
 });

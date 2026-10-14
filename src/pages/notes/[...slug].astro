@@ -115,25 +115,5 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
   <TwikooComments path={noteUrl} title="评论" />
   </article>
 
-  <script is:inline>
-    const slug = document.querySelector("[data-note-slug]")?.getAttribute("data-note-slug") ?? "";
 
-    if (slug) {
-      const body = JSON.stringify({ slug });
-      const viewsNode = document.querySelector("[data-view-count]");
-
-      fetch("/api/view", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (!viewsNode || !data?.views) return;
-          viewsNode.textContent = Number(data.views).toLocaleString("zh-CN");
-        })
-        .catch(() => {});
-    }
-  </script>
 </BaseLayout>

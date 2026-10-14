@@ -1,10 +1,12 @@
+import { commentSource } from "../lib/admin/comment-source";
+import { newPostPath, POST_CATEGORIES } from "../lib/admin/post-path";
 export {};
-type Post = { path: string; sha?: string; title: string; date: string; description: string; tags: string[]; draft: boolean; content?: string };
+type Post = { path: string; category?: string; sha?: string; title: string; date: string; description: string; tags: string[]; draft: boolean; content?: string };
 type Comment = { _id: string; nick?: string; comment?: string; url?: string; created?: number; isSpam?: boolean; top?: boolean; pid?: string; rid?: string };
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const field = (id: string) => el<HTMLInputElement>(id);
 const value = (id: string) => field(id).value;
-let connected = false, posts: Post[] = [], filter = 'all', view = 'posts', current: Post | null = null, dirty = false, saving = false, page = 1, commentCount = 0, reply: Comment | null = null;
+let connected = false, canWrite = false, posts: Post[] = [], filter = 'all', view = 'posts', current: Post | null = null, dirty = false, saving = false, page = 1, commentCount = 0, reply: Comment | null = null;
 let previewVersion = 0, previewTimer: ReturnType<typeof setTimeout>, noticeTimer: ReturnType<typeof setTimeout>;
 function notice(message: string) { el('notice').textContent = message; el('notice').hidden = false; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => el('notice').hidden = true, 6000); }
 async function api<T = any>(route: string, method = 'GET', body?: unknown): Promise<T> {
@@ -22,9 +24,10 @@ function switchView(next: string, force = false) {
   if (view === 'editor' && next !== 'editor' && !force && !canLeave()) return;
   if (next !== 'editor') { dirty = false; previewVersion++; }
   view = next;
-  for (const name of ['posts', 'editor', 'comments', 'settings']) el(`${name}-view`).hidden = name !== next;
+  for (const name of ['posts', 'editor', 'comments', 'stats', 'settings']) el(`${name}-view`).hidden = name !== next;
   document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(node => node.classList.toggle('active', node.dataset.view === next || next === 'editor' && node.dataset.view === 'posts'));
-  el('breadcrumb').textContent = { posts: '文章', editor: '写作', comments: '读者留言', settings: '后台设置' }[next] || '';
+  el('breadcrumb').textContent = { posts: '文章', editor: '写作', comments: '读者留言', stats: '访问统计', settings: '后台设置' }[next] || '';
+  if (next === 'stats') void loadStats().catch(error => notice(error.message));
   if (next === 'comments') void loadComments().catch(error => notice(error.message));
 }
 async function bootstrap() {
@@ -39,11 +42,11 @@ async function bootstrap() {
     if (response.ok) { const session = await response.json(); await enter(session); }
   } catch (error) { el('login-description').textContent = error instanceof Error ? error.message : '无法连接后台。'; el('retry-bootstrap').hidden = false; }
 }
-async function enter(session?: { connected: boolean; repository: string }) {
-  const state = session || await api<{ connected: boolean; repository: string }>('session'); connected = state.connected;
+async function enter(session?: { connected: boolean; canWrite: boolean; writeError: string; repository: string }) {
+  const state = session || await api<{ connected: boolean; canWrite: boolean; writeError: string; repository: string }>('session'); connected = state.connected; canWrite = state.canWrite;
   el('login-view').hidden = true; el('admin-view').hidden = false; field('login-password').value = '';
-  el('connection-status').textContent = `${state.repository} · ${connected ? '已连接，可以编辑与发布。' : '尚未连接。留言管理已可使用。'}`;
-  el('repo-prompt').hidden = connected; el<HTMLButtonElement>('new-post').disabled = !connected;
+  el('connection-status').textContent = `${state.repository} · ${canWrite ? '已验证写入权限，可以编辑与发布。' : connected ? '可读取文章，写入权限尚未通过。' : '尚未连接。留言管理已可使用。'}`;
+  el('repo-prompt').hidden = canWrite; el('repo-message').textContent = state.writeError || '连接拥有 Contents 写权限的令牌后即可保存与发布。'; el<HTMLButtonElement>('new-post').disabled = !connected;
   if (dirty && current && view === 'editor') { switchView('editor', true); notice('登录已恢复，未保存的内容仍在编辑器中。'); void preview(); return; }
   switchView('posts', true); if (connected) await loadPosts(); else empty('posts-list', '连接文章仓库后，在这里开始写作。');
 }
@@ -82,15 +85,29 @@ el('new-post').addEventListener('click', () => openEditor({ path: '', title: '',
 function openEditor(post: Post) {
   current = { ...post }; dirty = false;
   for (const name of ['title', 'path', 'date', 'description', 'content'] as const) field(`post-${name}`).value = post[name] || '';
-  field('post-tags').value = post.tags.join('，'); field('post-path').disabled = Boolean(post.sha);
+  field('post-tags').value = post.tags.join('，');
+  const category = el<HTMLSelectElement>('post-category');
+  category.querySelector('[data-legacy]')?.remove();
+  const folder = post.path.split('/')[0];
+  if (post.sha && !(POST_CATEGORIES as readonly string[]).includes(folder)) {
+    const option = document.createElement('option'); option.value = folder; option.textContent = folder || '原分类'; option.dataset.legacy = 'true'; category.append(option);
+  }
+  category.value = post.sha ? folder : '心情'; category.disabled = Boolean(post.sha); ensurePath();
   el('editor-heading').textContent = post.sha ? '编辑文章' : '写一篇'; el('save-state').textContent = post.sha ? `${post.draft ? '草稿' : '已发布'} · ${post.path}` : '新文章尚未保存。';
   switchView('editor', true); updateWords(); void preview();
 }
-function ensurePath() { if (!current?.sha && !value('post-path').trim() && value('post-title').trim()) field('post-path').value = `随笔/${value('post-title').trim().replace(/[\\/:*?"<>|#\x00-\x1f]/g, '-').slice(0, 100)}.md`; }
+function ensurePath() {
+  if (!current?.sha) {
+    try { field('post-path').value = newPostPath(value('post-category'), value('post-title')); }
+    catch { field('post-path').value = ''; }
+  }
+  el('post-location').textContent = current?.sha ? '已保存文章保留原地址。' : '文章地址根据分类和标题自动生成。';
+}
+
 function updateWords() { el('word-count').textContent = `${value('post-content').replace(/\s/g, '').length.toLocaleString()} 字`; }
-function changed() { dirty = true; el('save-state').textContent = '有未保存的修改。'; updateWords(); clearTimeout(previewTimer); previewTimer = setTimeout(() => void preview(), 450); }
-['title', 'path', 'date', 'description', 'tags', 'content'].forEach(name => field(`post-${name}`).addEventListener('input', changed));
-field('post-title').addEventListener('blur', ensurePath);
+function changed() { ensurePath(); dirty = true; el('save-state').textContent = '有未保存的修改。'; updateWords(); clearTimeout(previewTimer); previewTimer = setTimeout(() => void preview(), 450); }
+['title', 'date', 'description', 'tags', 'content'].forEach(name => field(`post-${name}`).addEventListener('input', changed));
+el('post-category').addEventListener('change', changed);
 async function preview() {
   if (view !== 'editor' || el('editor-panes').classList.contains('mode-edit')) return;
   const version = ++previewVersion;
@@ -101,16 +118,16 @@ document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(node => node
 function insert(before: string, after = '', placeholder = '') { const area = el<HTMLTextAreaElement>('post-content'); const start = area.selectionStart, end = area.selectionEnd; const selected = area.value.slice(start, end) || placeholder; area.setRangeText(before + selected + after, start, end, 'end'); area.focus(); changed(); }
 document.querySelectorAll<HTMLButtonElement>('[data-format]').forEach(node => node.addEventListener('click', () => { const format = node.dataset.format; if (format === 'bold') insert('**', '**', '文字'); if (format === 'italic') insert('*', '*', '文字'); if (format === 'heading') insert('\n## ', '\n', '标题'); if (format === 'link') insert('[', '](https://)', '链接文字'); }));
 async function save(draft: boolean) {
-  if (!current || saving) return; ensurePath(); if (!value('post-title').trim() || !value('post-path').trim() || !value('post-date')) throw new Error('请填写标题、文章路径和日期。');
+  if (!current || saving) return; ensurePath(); if (!value('post-title').trim() || !value('post-path').trim() || !value('post-date')) throw new Error('请填写有效标题、分类和日期。');
   if (draft && current.sha && !current.draft && !confirm('保存为草稿后，这篇已发布文章会在下次部署时取消公开。继续吗？')) return;
-  const input: Post = { path: value('post-path').trim(), title: value('post-title').trim(), date: value('post-date'), description: value('post-description'), tags: value('post-tags').split(/[,，]/).map(tag => tag.trim()).filter(Boolean), draft, content: value('post-content'), ...(current.sha ? { sha: current.sha } : {}) };
-  saving = true; const snapshot = JSON.stringify(input); el<HTMLButtonElement>('save-draft').disabled = true; el<HTMLButtonElement>('publish-post').disabled = true;
-  try { const result = await api<{ sha: string }>('posts', 'POST', input); current = { ...input, sha: result.sha }; field('post-path').disabled = true;
-    field('post-path').value = input.path;
+  const input: Post = { path: value('post-path').trim(), title: value('post-title').trim(), date: value('post-date'), description: value('post-description'), tags: value('post-tags').split(/[,，]/).map(tag => tag.trim()).filter(Boolean), draft, content: value('post-content'), ...(current.sha ? { sha: current.sha } : { category: value('post-category') }) };
+  saving = true; el<HTMLSelectElement>('post-category').disabled = true; const snapshot = JSON.stringify(input); el<HTMLButtonElement>('save-draft').disabled = true; el<HTMLButtonElement>('publish-post').disabled = true;
+  try { const result = await api<{ sha: string; path: string }>('posts', 'POST', input); input.path = result.path; current = { ...input, sha: result.sha }; el<HTMLSelectElement>('post-category').disabled = true;
+    field('post-path').value = input.path; ensurePath();
     const now = { ...input, title: value('post-title').trim(), date: value('post-date'), description: value('post-description'), tags: value('post-tags').split(/[,，]/).map(tag => tag.trim()).filter(Boolean), content: value('post-content') };
     dirty = JSON.stringify(now) !== snapshot; el('save-state').textContent = dirty ? '已保存上一份内容，当前还有新修改。' : `${draft ? '草稿已保存' : '文章已提交发布'} · 等待站点部署完成。`;
     posts = posts.filter(p => p.path !== input.path); posts.unshift(current); renderPosts(); notice(draft ? '草稿已保存。' : '文章已提交发布，部署完成后生效。');
-  } finally { saving = false; el<HTMLButtonElement>('save-draft').disabled = false; el<HTMLButtonElement>('publish-post').disabled = false; }
+  } finally { saving = false; el<HTMLSelectElement>('post-category').disabled = Boolean(current?.sha); el<HTMLButtonElement>('save-draft').disabled = false; el<HTMLButtonElement>('publish-post').disabled = false; }
 }
 el('save-draft').addEventListener('click', () => void save(true).catch(error => notice(error.message)));
 el('publish-post').addEventListener('click', () => void save(false).catch(error => notice(error.message)));
@@ -118,6 +135,19 @@ document.addEventListener('keydown', event => { if ((event.ctrlKey || event.meta
 window.addEventListener('beforeunload', event => { if (dirty || saving) event.preventDefault(); });
 el('upload-image').addEventListener('click', () => field('image-file').click());
 field('image-file').addEventListener('change', () => void busy(el<HTMLButtonElement>('upload-image'), async () => { const file = field('image-file').files?.[0]; if (!file) return; field('image-file').value = ''; if (file.size > 4 * 1024 * 1024) throw new Error('图片最大支持 4 MB。'); const post = current; const data = new FormData(); data.append('file', file); const result = await api<{ url: string }>('upload', 'POST', data); if (current === post && view === 'editor') insert(`\n![图片](${result.url})\n`); notice('图片已保存到仓库。'); }));
+async function loadStats() {
+  const state = await api<{ siteViews: number | null; postViews: number | null; siteStarted: string | null; topPages: Array<{ slug: string; views: number }> }>('stats');
+  el('site-total').textContent = state.siteViews === null ? '暂不可用' : state.siteViews.toLocaleString('zh-CN');
+  el('post-total').textContent = state.postViews === null ? '暂不可用' : state.postViews.toLocaleString('zh-CN');
+  el('stats-since').textContent = state.siteStarted ? `全站统计开始于 ${new Date(state.siteStarted).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' })}，更新前非文章页面的访问无法追溯。` : '全站统计从本次更新后开始，历史文章浏览量单独保留。';
+  el('page-stats').replaceChildren();
+  if (!state.topPages.length) return empty('page-stats', state.siteViews === null ? '暂时无法读取统计，请稍后刷新。' : '暂时还没有全站访问记录。');
+  for (const page of state.topPages) {
+    const label = ({ '/': '首页', '/notes': '全部笔记', '/guestbook': '留言板', '/stats': '站点统计' } as Record<string, string>)[page.slug] || commentSource(page.slug, posts).label;
+    const row = text('article', '', 'post-row'); row.append(text('strong', label), text('span', `${page.views.toLocaleString('zh-CN')} 次`, 'muted')); el('page-stats').append(row);
+  }
+}
+el('refresh-stats').addEventListener('click', () => void busy(el<HTMLButtonElement>('refresh-stats'), loadStats));
 function plain(html: string) { return new DOMParser().parseFromString(html, 'text/html').body.textContent || ''; }
 async function loadComments() {
   empty('comments-list', '正在读取留言…'); el<HTMLButtonElement>('comments-prev').disabled = true; el<HTMLButtonElement>('comments-next').disabled = true;
@@ -133,7 +163,10 @@ async function loadComments() {
       actions.append(button('回复', async () => { reply = comment; el('reply-context').textContent = `${comment.nick || '读者'}：${plain(comment.comment || '').slice(0, 120)}`; field('reply-content').value = ''; el<HTMLDialogElement>('reply-dialog').showModal(); }), button(comment.isSpam ? '恢复公开' : '隐藏', () => change(comment.isSpam ? 'restore' : 'hide')));
       if (!comment.rid) actions.append(button(comment.top ? '取消置顶' : '置顶', () => change(comment.top ? 'unpin' : 'pin')));
       actions.append(button('删除', () => change('delete'), 'button small danger'));
-      card.append(heading, text('p', plain(comment.comment || ''), 'comment-body'), text('p', comment.url || '', 'comment-source muted'), actions); el('comments-list').append(card);
+      const source = commentSource(comment.url, posts), location = text('p', '', 'comment-source muted');
+      if (source.href) { const link = text('a', source.label) as HTMLAnchorElement; link.href = source.href; link.target = '_blank'; link.rel = 'noopener noreferrer'; location.append(link); }
+      else location.textContent = source.label;
+      card.append(heading, text('p', plain(comment.comment || ''), 'comment-body'), location, actions); el('comments-list').append(card);
     }
   } catch (error) { empty('comments-list', error instanceof Error ? error.message : '留言加载失败。'); throw error; }
 }

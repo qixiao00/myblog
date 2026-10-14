@@ -1,10 +1,12 @@
 import type { APIRoute } from "astro";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
+import { siteViewKey, SITE_STARTED_KEY } from "../../lib/site-views";
 import { getDb } from "../../lib/db";
 
 const ViewPayload = z.object({
-  slug: z.string().trim().min(1).max(240),
+  slug: z.string().trim().min(1).max(240).refine(slug => !slug.startsWith("@"), "Invalid slug").optional(),
+  page: z.string().min(1).max(1000).optional(),
 });
 
 const VISITOR_COOKIE = "paper_trail_visitor";
@@ -15,7 +17,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const payload = await request.json().catch(() => null);
     const parsed = ViewPayload.safeParse(payload);
 
-    if (!parsed.success) {
+    if (!parsed.success || (!parsed.data.slug && !parsed.data.page)) {
       return new Response(
         JSON.stringify({
           ok: false,
@@ -23,13 +25,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
         },
       );
     }
 
+    const origin = request.headers.get("origin");
+    if (!origin || origin !== new URL(request.url).origin) return Response.json({ ok: false }, { status: 403 });
+    // Logged-in editor visits do not contribute to public traffic.
+    if (cookies.has("paper_trail_admin")) return Response.json({ ok: true, ignored: true });
+    let siteKey: string | undefined;
+    try { if (parsed.data.page) siteKey = siteViewKey(parsed.data.page); }
+    catch { return Response.json({ ok: false, message: "Invalid page" }, { status: 400 }); }
     const sql = getDb();
     const { slug } = parsed.data;
+    const keys = [slug, siteKey].filter((key): key is string => Boolean(key));
     const storedVisitorId = cookies.get(VISITOR_COOKIE)?.value;
     const visitorId = storedVisitorId && UUID_PATTERN.test(storedVisitorId)
       ? storedVisitorId
@@ -40,7 +50,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const [row] = await sql<{ views: number }[]>`
       with counted as (
         insert into post_view_visitors (slug, visitor_hash, viewed_on)
-        values (${slug}, ${visitorHash}, ${viewedOn}::date)
+        select slug, ${visitorHash}, ${viewedOn}::date from unnest(${sql.array(keys)}::text[]) as input(slug)
         on conflict (slug, visitor_hash)
         do update set viewed_on = excluded.viewed_on
         where post_view_visitors.viewed_on < excluded.viewed_on
@@ -52,11 +62,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         do update set
           views = post_views.views + 1,
           updated_at = now()
-        returning views
+        returning slug, views
+      ), started as (
+        insert into post_views (slug, views)
+        select ${SITE_STARTED_KEY}, 0 where ${Boolean(siteKey)}
+        on conflict (slug) do nothing
       )
       select coalesce(
-        (select views from updated),
-        (select views from post_views where slug = ${slug}),
+        (select views from updated where slug = ${slug || siteKey!}),
+        (select views from post_views where slug = ${slug || siteKey!}),
         0
       )::int as views
     `;
@@ -65,7 +79,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       cookies.set(VISITOR_COOKIE, visitorId, {
         httpOnly: true,
         sameSite: "lax",
-        secure: import.meta.env.PROD,
+        secure: import.meta.env?.PROD ?? process.env.NODE_ENV === "production",
         path: "/",
         maxAge: 60 * 60 * 24 * 365,
       });
@@ -78,7 +92,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
       },
     );
   } catch {
@@ -89,7 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }),
       {
         status: 503,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
       },
     );
   }

@@ -46,6 +46,7 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
         <nav aria-label="后台导航">
           <button data-view="posts" class="nav-item active"><span aria-hidden="true">▤</span>文章</button>
           <button data-view="comments" class="nav-item"><span aria-hidden="true">◌</span>读者留言</button>
+          <button data-view="stats" class="nav-item"><span aria-hidden="true">▥</span>访问统计</button>
           <button data-view="settings" class="nav-item"><span aria-hidden="true">⚙</span>后台设置</button>
         </nav>
         <div class="sidebar-footer"><a href="/" target="_blank" rel="noopener noreferrer">查看博客 ↗</a><button id="logout" class="quiet-link">退出登录</button></div>
@@ -55,7 +56,7 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
 
         <section id="posts-view" class="workspace-view">
           <div class="section-heading"><div><p class="eyebrow">文章库</p><h1>留住写下的东西。</h1><p class="muted">编辑已有文章，或从一份草稿开始。</p></div><button id="new-post" class="button primary">＋ 写一篇</button></div>
-          <div id="repo-prompt" class="connection-prompt" hidden><div><strong>先连接你的文章仓库</strong><p>连接后即可读取历史文章、保存草稿与发布。</p></div><button id="open-settings" class="button">连接仓库 →</button></div>
+          <div id="repo-prompt" class="connection-prompt" hidden><div><strong>文章发布尚未就绪</strong><p id="repo-message">连接拥有 Contents 写权限的令牌后即可保存与发布。</p></div><button id="open-settings" class="button">连接仓库 →</button></div>
           <div class="list-toolbar"><div class="tabs" role="group" aria-label="文章状态"><button data-filter="all" class="active">全部 <span id="all-count">—</span></button><button data-filter="published">已发布 <span id="published-count">—</span></button><button data-filter="draft">草稿 <span id="draft-count">—</span></button></div><input id="post-search" type="search" placeholder="搜索标题、标签或路径" aria-label="搜索文章" /><button id="refresh-posts" class="button small">刷新</button></div>
           <div id="posts-list" class="post-list" aria-live="polite"></div>
         </section>
@@ -64,7 +65,8 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
           <div class="section-heading compact"><div><button id="back-posts" class="quiet-link">← 文章库</button><h1 id="editor-heading">写一篇</h1><p id="save-state" class="muted">开始写作。</p></div><div class="button-row"><button id="save-draft" class="button">保存草稿</button><button id="publish-post" class="button primary">发布文章</button></div></div>
           <div class="editor-details">
             <label class="title-field">标题<input id="post-title" type="text" placeholder="给这篇文章一个名字" maxlength="200" required /></label>
-            <div class="metadata-row"><label>文章路径<input id="post-path" type="text" placeholder="随笔/我的新文章.md" maxlength="220" /></label><label>发表日期<input id="post-date" type="date" required /></label><label>标签<input id="post-tags" type="text" placeholder="摄影，生活，随笔" /></label></div>
+            <div class="metadata-row"><label>分类<select id="post-category"><option value="心情">心情</option><option value="友人帐">友人帐</option></select></label><label>发表日期<input id="post-date" type="date" required /></label><label>标签<input id="post-tags" type="text" placeholder="摄影，生活，随笔" /></label></div>
+            <input id="post-path" type="hidden" /><p id="post-location" class="form-help" aria-live="polite">选择分类并填写标题，文章地址自动生成。</p>
             <label>简介<textarea id="post-description" rows="2" maxlength="240" placeholder="一句话介绍这篇文章（选填）"></textarea></label>
           </div>
           <div class="editor-toolbar"><div class="format-tools"><button data-format="bold" title="加粗" aria-label="插入加粗"><strong>B</strong></button><button data-format="italic" title="斜体" aria-label="插入斜体"><em>I</em></button><button data-format="heading" title="标题">H₂</button><button data-format="link" title="链接">链接</button><button id="upload-image" title="上传图片">＋ 图片</button><input id="image-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden /></div><div class="tabs editor-modes" role="group" aria-label="编辑模式"><button data-mode="edit">编辑</button><button data-mode="split" class="active">对照</button><button data-mode="preview">预览</button></div></div>
@@ -79,9 +81,15 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
           <div class="pagination"><button id="comments-prev" class="button small">← 上一页</button><span id="comments-page"></span><button id="comments-next" class="button small">下一页 →</button></div>
         </section>
 
+        <section id="stats-view" class="workspace-view" hidden>
+          <div class="section-heading"><div><p class="eyebrow">站点访问</p><h1>有人来过这里。</h1><p class="muted">同一浏览器访问同一页面每天计一次；后台与登录管理员的访问不计入。</p></div><button id="refresh-stats" class="button">刷新统计</button></div>
+          <div class="stats-cards"><article class="settings-card"><p class="muted">全站累计访问量</p><strong id="site-total" class="stats-number">—</strong></article><article class="settings-card"><p class="muted">文章累计浏览量（含历史）</p><strong id="post-total" class="stats-number">—</strong></article></div>
+          <p id="stats-since" class="form-help"></p><h2 class="stats-heading">访问最多的页面</h2><div id="page-stats" class="post-list"></div>
+        </section>
+
         <section id="settings-view" class="workspace-view" hidden>
           <div class="section-heading"><div><p class="eyebrow">后台设置</p><h1>让写作顺畅一点。</h1></div></div>
-          <form id="connect-form" class="settings-card"><p class="eyebrow">文章发布</p><h2>连接博客仓库</h2><p id="connection-status" class="muted"></p><label>GitHub 访问令牌<input id="connect-token" type="password" autocomplete="off" maxlength="512" required placeholder="粘贴拥有仓库 Contents 写权限的令牌" /></label><p class="form-help"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">创建令牌 ↗</a>：选择博客仓库，将 Contents 设置为 Read and write。令牌保存在加密登录会话中，退出登录后需要重新连接。</p><button class="button primary" type="submit">验证并连接</button></form>
+          <form id="connect-form" class="settings-card"><p class="eyebrow">文章发布</p><h2>连接博客仓库</h2><p id="connection-status" class="muted"></p><label>GitHub 访问令牌<input id="connect-token" type="password" autocomplete="off" maxlength="512" required placeholder="粘贴拥有仓库 Contents 写权限的令牌" /></label><p class="form-help"><a href="https://github.com/settings/personal-access-tokens/new?name=Paper%20Trail&amp;resource_owner=qixiao00&amp;contents=write" target="_blank" rel="noopener noreferrer">创建令牌 ↗</a>：选择博客仓库，将 Contents 设置为 Read and write。连接时会验证实际写入权限。手动连接的令牌保存在加密会话中；服务端已配置令牌时可直接使用。</p><button class="button primary" type="submit">验证并连接</button></form>
           <div class="settings-card"><p class="eyebrow">发布与数据</p><h2>文章和留言各有归处</h2><dl class="settings-facts"><div><dt>文章与图片</dt><dd>保存在原有笔记库，支持继续使用 Obsidian。</dd></div><div><dt>发布生效</dt><dd>发布或更新后，等待站点部署完成即可在博客看到。草稿不展示在博客，但会写入公开仓库，请勿保存私密内容。</dd></div><div><dt>读者留言</dt><dd>继续保存在 Twikoo 的 MongoDB 数据库中。</dd></div><div><dt>登录有效期</dt><dd>7 天。修改 Twikoo 管理员密码后需重新登录。</dd></div></dl></div>
         </section>
       </main>

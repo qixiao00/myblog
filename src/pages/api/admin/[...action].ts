@@ -2,7 +2,8 @@ import type { APIRoute, APIContext } from "astro";
 import { z } from "zod";
 import { AdminError, SESSION_COOKIE, checkLoginRate, decodeSession, encodeSession, env, readJson, requireSameOrigin, saveSession, verifyCredentials } from "../../../lib/admin/security";
 import { changeComment, initializePassword, listComments, loginPassword, passwordStatus, replyComment, verifyAdmin } from "../../../lib/admin/comments";
-import { PostInput, deletePost, getImage, getPost, githubToken, listPosts, repository, savePost, uploadImage, verifyOwner } from "../../../lib/admin/posts";
+import { PostInput, deletePost, getImage, getPost, githubToken, listPosts, repository, savePost, uploadImage, verifyOwner, verifyWriteAccess } from "../../../lib/admin/posts";
+import { getViewStats } from "../../../lib/engagement";
 import { previewMarkdown } from "../../../lib/admin/preview";
 
 export const prerender = false;
@@ -42,7 +43,16 @@ const handler: APIRoute = async (context: APIContext) => {
     await verifyAdmin(session);
 
     if (request.method === "GET") {
-      if (action === "session") return json({ authenticated: true, repository: repository().name, connected: Boolean(env("ADMIN_GITHUB_TOKEN") || session.githubToken) });
+      if (action === "session") {
+        const connected = Boolean(env("ADMIN_GITHUB_TOKEN") || session.githubToken);
+        let canWrite = false, writeError = "";
+        if (connected) {
+          try { await verifyWriteAccess(githubToken(session)); canWrite = true; }
+          catch (error) { if (!(error instanceof AdminError)) throw error; writeError = error.message; }
+        }
+        return json({ authenticated: true, repository: repository().name, connected, canWrite, writeError });
+      }
+      if (action === "stats") return json(await getViewStats(15));
       if (action === "posts") return json(url.searchParams.has("path") ? await getPost(session, url.searchParams.get("path")!) : { posts: await listPosts(session) });
       if (action === "comments") {
         const page = Math.max(1, Math.min(500, Math.floor(Number(url.searchParams.get("page"))) || 1));

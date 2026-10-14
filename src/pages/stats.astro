@@ -19,13 +19,19 @@ const [stats, commentCount] = await Promise.all([
 <BaseLayout title="站点统计" description="站点访问与互动统计。" tree={tree}>
   <section>
     <h1 class="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)]">站点统计</h1>
-    <p class="mt-4 text-sm text-[var(--muted)]">新浏览量按匿名浏览器每日去重，历史计数未去重；评论数来自 Twikoo，包含回复。</p>
+    <p class="mt-4 text-sm text-[var(--muted)]">全站访问量覆盖首页、笔记列表、文章、留言板和统计页，同一浏览器访问同一页面每天计一次；后台及已登录管理员的访问不计入。历史文章计数单独保留。</p>
   </section>
 
-  <section class="mt-8 grid gap-4 md:grid-cols-2">
+  <p class="mt-3 text-sm text-[var(--muted)]">{stats.siteStarted ? `全站统计开始于 ${new Date(stats.siteStarted).toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai" })}。` : "全站统计从本次更新后开始，更新前非文章页面的访问无法追溯。"}</p>
+
+  <section class="mt-8 grid gap-4 md:grid-cols-3">
     <article class="surface-panel rounded-[1.5rem] p-5">
-      <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">总浏览量</p>
-      <p class="mt-3 text-4xl font-semibold text-[var(--foreground)]">{stats.siteViews.toLocaleString("zh-CN")}</p>
+      <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">全站累计访问量</p>
+      <p class="mt-3 text-4xl font-semibold text-[var(--foreground)]">{stats.siteViews === null ? "暂不可用" : stats.siteViews.toLocaleString("zh-CN")}</p>
+    </article>
+    <article class="surface-panel rounded-[1.5rem] p-5">
+      <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">文章累计浏览量（含历史）</p>
+      <p class="mt-3 text-4xl font-semibold text-[var(--foreground)]">{stats.postViews === null ? "暂不可用" : stats.postViews.toLocaleString("zh-CN")}</p>
     </article>
     <article class="surface-panel rounded-[1.5rem] p-5">
       <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">总评论数</p>

@@ -1,4 +1,5 @@
 import { readFrontmatter, writeFrontmatter } from "./frontmatter";
+import { newPostPath, POST_CATEGORIES } from "./post-path";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { AdminError, env, type AdminSession } from "./security";
@@ -15,7 +16,7 @@ export function githubToken(session: AdminSession) {
   return token;
 }
 
-async function github<T>(path: string, token: string, method = "GET", data?: unknown): Promise<T> {
+async function githubRequest(path: string, token: string, method = "GET", data?: unknown) {
   let response: Response;
   try {
     response = await fetch(`https://api.github.com${path}`, {
@@ -24,11 +25,31 @@ async function github<T>(path: string, token: string, method = "GET", data?: unk
       cache: "no-store", signal: AbortSignal.timeout(20_000),
     });
   } catch { throw new AdminError(502, "暂时无法连接文章仓库，请稍后重试。"); }
+  return response;
+}
+
+async function github<T>(path: string, token: string, method = "GET", data?: unknown): Promise<T> {
+  const response = await githubRequest(path, token, method, data);
   if (response.status === 409 || response.status === 422) throw new AdminError(409, "文章已被其他操作更新。请重新加载最新内容后保存。");
-  if (response.status === 401 || response.status === 403) throw new AdminError(403, "GitHub 凭据无效或没有仓库写入权限，请重新连接。");
+  if (response.status === 401) throw new AdminError(403, "GitHub 令牌已失效，请在后台设置中重新连接。");
+  if (response.status === 403) {
+    if (response.headers.get("x-ratelimit-remaining") === "0") throw new AdminError(429, "GitHub 请求额度暂时用完，请稍后再试。");
+    throw new AdminError(403, method === "GET" ? "GitHub 令牌无法读取仓库，请检查授权的仓库。" : "令牌缺少 Contents 写入权限。请在 GitHub 将 myblog 的 Contents 改为 Read and write，保存后重试。");
+  }
   if (response.status === 404) throw new AdminError(404, "文章或仓库不存在，请检查仓库权限。");
   if (!response.ok) throw new AdminError(502, "文章仓库操作失败，请稍后再试。");
   return await response.json() as T;
+}
+
+export async function verifyWriteAccess(token: string) {
+  // Empty JSON has neither message nor content, so GitHub cannot create a commit.
+  // Its permission check runs first: a write-capable token reaches validation (422).
+  const response = await githubRequest(`/repos/${repository().name}/contents/vault/.admin-permission-check.md`, token, "PUT", {});
+  if (response.status === 422) return;
+  if (response.status === 403 && response.headers.get("x-ratelimit-remaining") === "0") throw new AdminError(429, "GitHub 请求额度暂时用完，请稍后再试。");
+  if (response.status === 401) throw new AdminError(403, "GitHub 令牌已失效，请重新连接。");
+  if (response.status === 403 || response.status === 404) throw new AdminError(403, "令牌缺少 Contents 写入权限。请在 GitHub 将 myblog 的 Contents 改为 Read and write，保存后重试。");
+  throw new AdminError(502, "无法确认仓库写入权限，请稍后重试。");
 }
 
 export async function verifyOwner(token: string) {
@@ -37,6 +58,7 @@ export async function verifyOwner(token: string) {
   if (user.login.toLowerCase() !== repo.owner.toLowerCase()) throw new AdminError(403, "只能使用博客仓库所有者的 GitHub 凭据。");
   const details = await github<{ permissions?: { push?: boolean } }>(`/repos/${repo.name}`, token);
   if (!details.permissions?.push) throw new AdminError(403, "此凭据没有博客仓库的编辑权限。");
+  await verifyWriteAccess(token);
   return user.login;
 }
 
@@ -91,7 +113,7 @@ export async function listPosts(session: AdminSession) {
 }
 
 export const PostInput = z.object({
-  path: z.string().min(1).max(220), sha: z.string().regex(/^[a-f0-9]{40}$/).optional(),
+  path: z.string().max(220).default(""), category: z.enum(POST_CATEGORIES).optional(), sha: z.string().regex(/^[a-f0-9]{40}$/).optional(),
   title: z.string().trim().min(1, "请填写标题。").max(200),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
     const date = new Date(`${value}T00:00:00Z`);
@@ -102,7 +124,12 @@ export const PostInput = z.object({
 
 export async function savePost(session: AdminSession, input: z.infer<typeof PostInput>) {
   const token = githubToken(session);
-  const path = safePostPath(input.path);
+  let relativePath = input.path;
+  if (!input.sha) {
+    try { relativePath = newPostPath(input.category || input.path.split("/")[0], input.title); }
+    catch (error) { throw new AdminError(400, error instanceof Error ? error.message : "文章分类不正确。"); }
+  }
+  const path = safePostPath(relativePath);
   let oldData: Record<string, unknown> = {};
   if (input.sha) {
     const current = await github<GithubFile>(`${contentUrl(path)}?ref=${encodeURIComponent(repository().branch)}`, token);
@@ -117,7 +144,7 @@ export async function savePost(session: AdminSession, input: z.infer<typeof Post
     message: `${input.draft ? "draft" : "publish"}: ${input.title}`, branch: repository().branch,
     content: Buffer.from(text, "utf8").toString("base64"), ...(input.sha ? { sha: input.sha } : {}),
   });
-  return { sha: result.content.sha, commitUrl: result.commit.html_url };
+  return { path: relativePath, sha: result.content.sha, commitUrl: result.commit.html_url };
 }
 
 export async function deletePost(session: AdminSession, path: string, sha: string) {
