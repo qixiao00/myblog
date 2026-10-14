@@ -12,7 +12,7 @@ const notes = await getCollection(
 const tree = buildSidebarTree(notes);
 const [stats, commentCount] = await Promise.all([
   getViewStats(30),
-  getTwikooCommentCount(["/guestbook", ...notes.map((note) => noteUrlFromId(note.id))]),
+  getTwikooCommentCount(["/guestbook", ...notes.map((note) => note.data.commentPath || noteUrlFromId(note.id))]),
 ]);
 ---
 

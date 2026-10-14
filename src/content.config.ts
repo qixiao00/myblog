@@ -78,6 +78,10 @@ const notes = defineCollection({
       z.string().optional(),
     ),
     tags: z.preprocess(normalizeTags, z.array(z.string())),
+    redirectFrom: z.array(z.string()).default([]),
+    viewSlug: z.string().optional(),
+    commentPath: z.string().optional(),
+    sourcePath: z.string().optional(),
     draft: z.preprocess(normalizeBoolean, z.boolean()),
   }),
 });

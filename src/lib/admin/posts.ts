@@ -83,7 +83,7 @@ export function parsePost(path: string, text: string, sha: string) {
   const parsed = readFrontmatter(text);
   const date = formatDate(parsed.data.date);
   return {
-    path, sha, title: String(parsed.data.title || path.replace(/\.md$/, "").split("/").pop()),
+    path, sha, sourcePath: typeof parsed.data.sourcePath === "string" ? parsed.data.sourcePath : undefined, viewSlug: typeof parsed.data.viewSlug === "string" ? parsed.data.viewSlug : undefined, title: String(parsed.data.title || path.replace(/\.md$/, "").split("/").pop()),
     date, updated: formatDate(parsed.data.updated), description: String(parsed.data.description || ""),
     tags: Array.isArray(parsed.data.tags) ? parsed.data.tags.map(String) : typeof parsed.data.tags === "string" ? parsed.data.tags.split(/[,，]/).map((tag: string) => tag.trim()).filter(Boolean) : [],
     draft: parsed.data.draft === true || parsed.data.draft === 1 || ["true", "1", "yes", "y"].includes(String(parsed.data.draft).toLowerCase()), content: parsed.content.trimStart(),
@@ -122,7 +122,38 @@ export const PostInput = z.object({
   tags: z.array(z.string().trim().min(1).max(60)).max(30), draft: z.boolean(), content: z.string().max(700_000),
 });
 
+async function movePost(session: AdminSession, input: z.infer<typeof PostInput>, destination: string) {
+  const token = githubToken(session), repo = repository();
+  const oldPath = safePostPath(input.path), nextPath = safePostPath(destination);
+  const head = await github<{ object: { sha: string } }>(`/repos/${repo.name}/git/ref/heads/${encodeURIComponent(repo.branch)}`, token);
+  const commit = await github<{ tree: { sha: string } }>(`/repos/${repo.name}/git/commits/${head.object.sha}`, token);
+  const tree = await github<{ truncated: boolean; tree: Array<{ path: string; sha: string; type: string }> }>(`/repos/${repo.name}/git/trees/${commit.tree.sha}?recursive=1`, token);
+  if (tree.truncated) throw new AdminError(502, "仓库列表过大，无法安全移动文章。");
+  if (tree.tree.find(file => file.path === oldPath)?.sha !== input.sha) throw new AdminError(409, "文章已被更新，请重新加载后保存。");
+  if (tree.tree.some(file => file.path === nextPath)) throw new AdminError(409, "所选分类已有同名文章，请先处理同名文章或选择其他分类。");
+  const current = await github<GithubFile>(`${contentUrl(oldPath)}?ref=${head.object.sha}`, token);
+  const oldData = readFrontmatter(Buffer.from(current.content, "base64").toString("utf8")).data;
+  const oldSlug = input.path.replace(/\.md$/i, "");
+  const text = writeFrontmatter(input.content, { ...oldData, title: input.title, date: input.date, updated: new Date().toISOString().slice(0, 10), description: input.description, tags: input.tags, draft: input.draft,
+    redirectFrom: [...new Set([...(Array.isArray(oldData.redirectFrom) ? oldData.redirectFrom : []), oldSlug])].filter(slug => slug !== destination.replace(/\.md$/i, "")),
+    viewSlug: oldData.viewSlug || oldSlug, commentPath: oldData.commentPath || `/notes/${oldSlug.split("/").map(encodeURIComponent).join("/")}`, sourcePath: oldData.sourcePath || input.path,
+  });
+  // One tree/commit moves the article atomically; a concurrent branch update rejects the final ref update.
+  const nextTree = await github<{ sha: string; tree: Array<{ path: string; sha: string }> }>(`/repos/${repo.name}/git/trees`, token, "POST", { base_tree: commit.tree.sha, tree: [
+    { path: oldPath, mode: "100644", type: "blob", sha: null }, { path: nextPath, mode: "100644", type: "blob", content: text },
+  ] });
+  const nextCommit = await github<{ sha: string; html_url: string }>(`/repos/${repo.name}/git/commits`, token, "POST", { message: `move: ${input.title} → ${input.category}`, tree: nextTree.sha, parents: [head.object.sha] });
+  await github(`/repos/${repo.name}/git/refs/heads/${encodeURIComponent(repo.branch)}`, token, "PATCH", { sha: nextCommit.sha, force: false });
+  const blob = nextTree.tree.find(file => file.path === nextPath);
+  if (!blob) throw new AdminError(502, "文章已移动，请刷新文章列表。");
+  return { path: destination, sha: blob.sha, commitUrl: nextCommit.html_url };
+}
+
 export async function savePost(session: AdminSession, input: z.infer<typeof PostInput>) {
+  if (input.sha && input.category && input.category !== input.path.split("/")[0]) {
+    const destination = `${input.category}/${input.path.split("/").pop()}`;
+    return movePost(session, input, destination);
+  }
   const token = githubToken(session);
   let relativePath = input.path;
   if (!input.sha) {

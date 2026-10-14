@@ -226,6 +226,8 @@ export function createVaultResolver(vaultRootUrl) {
 
   return {
     relativeNotePathFromFile(file) {
+      const sourcePath = file.data?.astro?.frontmatter?.sourcePath;
+      if (typeof sourcePath === "string" && !sourcePath.startsWith("/") && !sourcePath.split("/").includes("..")) return stripMarkdownExtension(normalizePath(sourcePath));
       if (!file.path) {
         return "";
       }

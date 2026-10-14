@@ -65,7 +65,7 @@ Astro.response.headers.set("Referrer-Policy", "same-origin");
           <div class="section-heading compact"><div><button id="back-posts" class="quiet-link">← 文章库</button><h1 id="editor-heading">写一篇</h1><p id="save-state" class="muted">开始写作。</p></div><div class="button-row"><button id="save-draft" class="button">保存草稿</button><button id="publish-post" class="button primary">发布文章</button></div></div>
           <div class="editor-details">
             <label class="title-field">标题<input id="post-title" type="text" placeholder="给这篇文章一个名字" maxlength="200" required /></label>
-            <div class="metadata-row"><label>分类<select id="post-category"><option value="心情">心情</option><option value="友人帐">友人帐</option></select></label><label>发表日期<input id="post-date" type="date" required /></label><label>标签<input id="post-tags" type="text" placeholder="摄影，生活，随笔" /></label></div>
+            <div class="metadata-row"><fieldset class="category-field"><legend>分类</legend><div id="category-options" class="category-options" role="group" aria-label="文章分类"><button type="button" data-category="心情" aria-pressed="true">心情</button><button type="button" data-category="友人帐" aria-pressed="false">友人帐</button></div><input id="post-category" type="hidden" value="心情" /></fieldset><label>发表日期<input id="post-date" type="date" required /></label><label>标签<input id="post-tags" type="text" placeholder="摄影，生活，随笔" /></label></div>
             <input id="post-path" type="hidden" /><p id="post-location" class="form-help" aria-live="polite">选择分类并填写标题，文章地址自动生成。</p>
             <label>简介<textarea id="post-description" rows="2" maxlength="240" placeholder="一句话介绍这篇文章（选填）"></textarea></label>
           </div>

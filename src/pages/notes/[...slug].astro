@@ -20,13 +20,15 @@ export async function getStaticPaths() {
     ({ data }) => !import.meta.env.PROD || !data.draft,
   );
 
-  return notes.map((entry) => ({
-    params: { slug: normalizeNoteId(entry.id) },
-    props: { entry },
-  }));
+  const paths = new Set(notes.map(entry => normalizeNoteId(entry.id)));
+  return notes.flatMap(entry => [{ params: { slug: normalizeNoteId(entry.id) }, props: { entry, redirect: false } },
+    ...entry.data.redirectFrom.filter(slug => !paths.has(slug)).map(slug => ({ params: { slug }, props: { entry, redirect: true } })),
+  ]);
+
 }
 
-const { entry } = Astro.props as { entry: NoteEntry };
+const { entry, redirect } = Astro.props as { entry: NoteEntry; redirect: boolean };
+if (redirect) return Astro.redirect(noteUrlFromId(entry.id), 301);
 const notes = await getCollection(
   "notes",
   ({ data }) => !import.meta.env.PROD || !data.draft,
@@ -48,7 +50,7 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
   tree={tree}
   currentNotePath={currentNotePath}
 >
-  <article data-note-slug={currentNotePath}>
+  <article data-note-slug={entry.data.viewSlug || currentNotePath}>
     <header class="border-b border-[var(--border)] pb-7">
       <p class="text-xs uppercase tracking-[0.34em] text-[var(--muted)]">{folderLabel}</p>
       <h1 class="mt-4 text-4xl font-semibold leading-tight tracking-tight text-[var(--foreground)] sm:text-5xl">
@@ -112,7 +114,7 @@ const { previous, next } = getSiblingNotes(notes, entry.id);
       )
     }
 
-  <TwikooComments path={noteUrl} title="评论" />
+  <TwikooComments path={entry.data.commentPath || noteUrl} title="评论" />
   </article>
 
 

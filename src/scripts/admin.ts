@@ -1,7 +1,7 @@
 import { commentSource } from "../lib/admin/comment-source";
 import { newPostPath, POST_CATEGORIES } from "../lib/admin/post-path";
 export {};
-type Post = { path: string; category?: string; sha?: string; title: string; date: string; description: string; tags: string[]; draft: boolean; content?: string };
+type Post = { path: string; category?: string; sha?: string; title: string; date: string; description: string; tags: string[]; draft: boolean; sourcePath?: string; viewSlug?: string; content?: string };
 type Comment = { _id: string; nick?: string; comment?: string; url?: string; created?: number; isSpam?: boolean; top?: boolean; pid?: string; rid?: string };
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const field = (id: string) => el<HTMLInputElement>(id);
@@ -86,32 +86,35 @@ function openEditor(post: Post) {
   current = { ...post }; dirty = false;
   for (const name of ['title', 'path', 'date', 'description', 'content'] as const) field(`post-${name}`).value = post[name] || '';
   field('post-tags').value = post.tags.join('，');
-  const category = el<HTMLSelectElement>('post-category');
-  category.querySelector('[data-legacy]')?.remove();
+  el('category-options').querySelector('[data-legacy]')?.remove();
   const folder = post.path.split('/')[0];
   if (post.sha && !(POST_CATEGORIES as readonly string[]).includes(folder)) {
-    const option = document.createElement('option'); option.value = folder; option.textContent = folder || '原分类'; option.dataset.legacy = 'true'; category.append(option);
+    const option = document.createElement('button'); option.type = 'button'; option.dataset.category = folder; option.textContent = folder || '原分类'; option.dataset.legacy = 'true'; el('category-options').append(option);
   }
-  category.value = post.sha ? folder : '心情'; category.disabled = Boolean(post.sha); ensurePath();
+  setCategory(post.sha ? folder : '心情'); ensurePath();
   el('editor-heading').textContent = post.sha ? '编辑文章' : '写一篇'; el('save-state').textContent = post.sha ? `${post.draft ? '草稿' : '已发布'} · ${post.path}` : '新文章尚未保存。';
   switchView('editor', true); updateWords(); void preview();
+}
+function setCategory(category: string) {
+  field('post-category').value = category;
+  el('category-options').querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.setAttribute('aria-pressed', String(button.dataset.category === category)); button.disabled = saving; });
 }
 function ensurePath() {
   if (!current?.sha) {
     try { field('post-path').value = newPostPath(value('post-category'), value('post-title')); }
     catch { field('post-path').value = ''; }
   }
-  el('post-location').textContent = current?.sha ? '已保存文章保留原地址。' : '文章地址根据分类和标题自动生成。';
+  el('post-location').textContent = current?.sha ? (value('post-category') !== current.path.split('/')[0] ? '保存后文章会移入所选分类，旧链接与留言继续保留。' : '可切换分类，保存后生效。') : '文章地址根据分类和标题自动生成。';
 }
 
 function updateWords() { el('word-count').textContent = `${value('post-content').replace(/\s/g, '').length.toLocaleString()} 字`; }
 function changed() { ensurePath(); dirty = true; el('save-state').textContent = '有未保存的修改。'; updateWords(); clearTimeout(previewTimer); previewTimer = setTimeout(() => void preview(), 450); }
 ['title', 'date', 'description', 'tags', 'content'].forEach(name => field(`post-${name}`).addEventListener('input', changed));
-el('post-category').addEventListener('change', changed);
+el('category-options').addEventListener('click', event => { const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-category]'); if (!button || button.disabled) return; setCategory(button.dataset.category!); changed(); });
 async function preview() {
   if (view !== 'editor' || el('editor-panes').classList.contains('mode-edit')) return;
   const version = ++previewVersion;
-  try { const result = await api<{ html: string }>('preview', 'POST', { content: value('post-content'), path: value('post-path') }); if (version === previewVersion && view === 'editor') el('post-preview').innerHTML = result.html || '<p class="muted">文章预览会出现在这里。</p>'; }
+  try { const result = await api<{ html: string }>('preview', 'POST', { content: value('post-content'), path: current?.sourcePath || value('post-path') }); if (version === previewVersion && view === 'editor') el('post-preview').innerHTML = result.html || '<p class="muted">文章预览会出现在这里。</p>'; }
   catch (error) { if (version === previewVersion) el('post-preview').textContent = error instanceof Error ? error.message : '预览失败。'; }
 }
 document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(node => node.addEventListener('click', () => { el('editor-panes').className = `editor-panes mode-${node.dataset.mode}`; document.querySelectorAll('[data-mode]').forEach(item => item.classList.toggle('active', item === node)); void preview(); }));
@@ -120,14 +123,14 @@ document.querySelectorAll<HTMLButtonElement>('[data-format]').forEach(node => no
 async function save(draft: boolean) {
   if (!current || saving) return; ensurePath(); if (!value('post-title').trim() || !value('post-path').trim() || !value('post-date')) throw new Error('请填写有效标题、分类和日期。');
   if (draft && current.sha && !current.draft && !confirm('保存为草稿后，这篇已发布文章会在下次部署时取消公开。继续吗？')) return;
-  const input: Post = { path: value('post-path').trim(), title: value('post-title').trim(), date: value('post-date'), description: value('post-description'), tags: value('post-tags').split(/[,，]/).map(tag => tag.trim()).filter(Boolean), draft, content: value('post-content'), ...(current.sha ? { sha: current.sha } : { category: value('post-category') }) };
-  saving = true; el<HTMLSelectElement>('post-category').disabled = true; const snapshot = JSON.stringify(input); el<HTMLButtonElement>('save-draft').disabled = true; el<HTMLButtonElement>('publish-post').disabled = true;
-  try { const result = await api<{ sha: string; path: string }>('posts', 'POST', input); input.path = result.path; current = { ...input, sha: result.sha }; el<HTMLSelectElement>('post-category').disabled = true;
+  const input: Post = { path: value('post-path').trim(), title: value('post-title').trim(), date: value('post-date'), description: value('post-description'), tags: value('post-tags').split(/[,，]/).map(tag => tag.trim()).filter(Boolean), draft, content: value('post-content'), ...((POST_CATEGORIES as readonly string[]).includes(value('post-category')) ? { category: value('post-category') } : {}), ...(current.sha ? { sha: current.sha } : {}) };
+  saving = true; setCategory(value('post-category')); const originalPath = current.path, requestedPath = input.path; const snapshot = JSON.stringify(input); el<HTMLButtonElement>('save-draft').disabled = true; el<HTMLButtonElement>('publish-post').disabled = true;
+  try { const result = await api<{ sha: string; path: string }>('posts', 'POST', input); const moved = result.path !== input.path; input.path = result.path; current = { ...input, sha: result.sha, sourcePath: current.sourcePath || (moved ? originalPath : undefined), viewSlug: current.viewSlug || (moved ? originalPath.replace(/\.md$/i, "") : undefined) };
     field('post-path').value = input.path; ensurePath();
-    const now = { ...input, title: value('post-title').trim(), date: value('post-date'), description: value('post-description'), tags: value('post-tags').split(/[,，]/).map(tag => tag.trim()).filter(Boolean), content: value('post-content') };
+    const now = { ...input, path: requestedPath, title: value('post-title').trim(), date: value('post-date'), description: value('post-description'), tags: value('post-tags').split(/[,，]/).map(tag => tag.trim()).filter(Boolean), content: value('post-content') };
     dirty = JSON.stringify(now) !== snapshot; el('save-state').textContent = dirty ? '已保存上一份内容，当前还有新修改。' : `${draft ? '草稿已保存' : '文章已提交发布'} · 等待站点部署完成。`;
-    posts = posts.filter(p => p.path !== input.path); posts.unshift(current); renderPosts(); notice(draft ? '草稿已保存。' : '文章已提交发布，部署完成后生效。');
-  } finally { saving = false; el<HTMLSelectElement>('post-category').disabled = Boolean(current?.sha); el<HTMLButtonElement>('save-draft').disabled = false; el<HTMLButtonElement>('publish-post').disabled = false; }
+    posts = posts.filter(p => p.path !== input.path && p.path !== originalPath); posts.unshift(current); renderPosts(); notice(draft ? '草稿已保存。' : '文章已提交发布，部署完成后生效。');
+  } finally { saving = false; setCategory(value('post-category')); el<HTMLButtonElement>('save-draft').disabled = false; el<HTMLButtonElement>('publish-post').disabled = false; }
 }
 el('save-draft').addEventListener('click', () => void save(true).catch(error => notice(error.message)));
 el('publish-post').addEventListener('click', () => void save(false).catch(error => notice(error.message)));

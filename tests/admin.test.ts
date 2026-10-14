@@ -161,3 +161,40 @@ test("site counters normalize public URLs and exclude APIs, admin, and unsafe pa
   assert.equal(siteViewKey("/notes/%E5%BF%83%E6%83%85/%E9%9B%AA"), "@site:/notes/心情/雪");
   for (const page of ["/admin", "/api/admin/stats", "//evil.example", "/notes/../admin", "/notes/%zz", "/notes/%00"]) assert.throws(() => siteViewKey(page));
 });
+
+
+test("category changes move a file in one commit and retain comments, views, redirects and metadata", async () => {
+  const originalSha = "1".repeat(40), headSha = "2".repeat(40), baseTree = "3".repeat(40), newTree = "4".repeat(40), newBlob = "5".repeat(40), nextCommit = "6".repeat(40);
+  const operations: string[] = []; let movedData: any;
+  mockFetch((url, body, method) => {
+    operations.push(method + " " + url);
+    if (url.includes("/git/ref/heads/")) return response({ object: { sha: headSha } });
+    if (method === "GET" && url.includes("/git/commits/")) return response({ tree: { sha: baseTree } });
+    if (method === "GET" && url.includes("/git/trees/")) return response({ truncated: false, tree: [{ path: "vault/心情/猫.md", sha: originalSha, type: "blob" }] });
+    if (url.includes("/contents/")) return response({ content: Buffer.from("---\ncustom: keep\n---\nold").toString("base64"), sha: originalSha });
+    if (method === "POST" && url.endsWith("/git/trees")) {
+      assert.equal(body.base_tree, baseTree); assert.equal(body.tree[0].sha, null); assert.equal(body.tree[0].path, "vault/心情/猫.md"); assert.equal(body.tree[1].path, "vault/友人帐/猫.md");
+      movedData = readFrontmatter(body.tree[1].content); return response({ sha: newTree, tree: [{ path: "vault/友人帐/猫.md", sha: newBlob }] });
+    }
+    if (method === "POST" && url.endsWith("/git/commits")) { assert.deepEqual(body.parents, [headSha]); return response({ sha: nextCommit, html_url: "https://example.test/commit" }); }
+    if (method === "PATCH") { assert.equal(body.force, false); assert.equal(body.sha, nextCommit); return response({ object: { sha: nextCommit } }); }
+    throw new Error("Unexpected request");
+  });
+  const result = await savePost(session, { path: "心情/猫.md", sha: originalSha, category: "友人帐", title: "猫", date: "2026-10-14", description: "", tags: [], draft: false, content: "正文" });
+  assert.equal(result.path, "友人帐/猫.md"); assert.equal(result.sha, newBlob); assert.equal(movedData.data.custom, "keep");
+  assert.equal(movedData.data.viewSlug, "心情/猫"); assert.equal(movedData.data.commentPath, "/notes/" + encodeURIComponent("心情") + "/" + encodeURIComponent("猫")); assert.deepEqual(movedData.data.redirectFrom, ["心情/猫"]); assert.equal(movedData.data.sourcePath, "心情/猫.md");
+  assert.ok(operations.at(-1)?.startsWith("PATCH")); assert.equal(operations.filter(op => op.startsWith("PUT")).length, 0);
+});
+test("moving an article refuses collisions and stale revisions without creating a commit", async () => {
+  let writes = 0;
+  for (const collision of [true, false]) {
+    mockFetch((url, _body, method) => {
+      if (method !== "GET") { writes++; throw new Error("Must not write"); }
+      if (url.includes("/git/ref/")) return response({ object: { sha: "2".repeat(40) } });
+      if (url.includes("/git/commits/")) return response({ tree: { sha: "3".repeat(40) } });
+      return response({ truncated: false, tree: [{ path: "vault/心情/猫.md", sha: (collision ? "1" : "9").repeat(40) }, ...(collision ? [{ path: "vault/友人帐/猫.md", sha: "7".repeat(40) }] : [])] });
+    });
+    await assert.rejects(savePost(session, { path: "心情/猫.md", sha: "1".repeat(40), category: "友人帐", title: "猫", date: "2026-10-14", description: "", tags: [], draft: false, content: "正文" }), collision ? /同名/ : /已被更新/);
+  }
+  assert.equal(writes, 0);
+});
